@@ -1,29 +1,29 @@
-# mcudubby v0.4.0
+﻿# mcudubby v0.4.0
 
-Initial public release of `mcudubby`, an MCP server for AI-assisted MCU debugging and real-board firmware diagnosis.
+`mcudubby` 首个公开版本。它是一个面向 AI 辅助 MCU 调试和真实板卡固件诊断的 MCP 服务端，让 AI 助手可以通过调试探针、寄存器、内存、ELF/DWARF 符号、UART/RTT 日志、SVD 外设寄存器、RTOS 状态、flash 操作和 GDB server 生命周期工具观察真实 MCU 目标。
 
-## What's Included
+## 本版本包含
 
-- MCP server entrypoint: `python -m mcudubby`
-- Probe control workflows for halt, resume, reset, stepping, breakpoints, watchpoints, registers, memory, and flash operations
-- pyOCD support for ST-Link and CMSIS-DAP probes
-- J-Link support through `pylink-square`
-- ELF/DWARF source context, symbol lookup, stack inspection, disassembly, and source navigation helpers
-- UART, Segger RTT, SVD peripheral register, FreeRTOS, and GDB server tooling
-- AI-oriented diagnosis flows for startup failures, HardFaults, stack overflow, peripheral issues, clock issues, and debug loops
-- English and Chinese documentation, quickstarts, support matrix, and bundled `mcubug` assistant skill references
+- MCP 服务入口：`python -m mcudubby`
+- 探针控制：halt、resume、reset、单步、断点、观察点、寄存器、内存和 flash 操作
+- pyOCD 后端：支持 ST-Link 和 CMSIS-DAP
+- J-Link 后端：通过 `pylink-square` 支持
+- ELF/DWARF 源码上下文：符号查询、栈检查、反汇编和源码导航
+- UART、Segger RTT、SVD 外设寄存器、FreeRTOS 和 GDB server 工具
+- 面向 AI 的诊断流程：启动失败、HardFault、栈溢出、外设异常、时钟问题和调试闭环
+- 中英文文档、快速上手、支持矩阵，以及内置 `mcubug` assistant skill 参考资料
 
-## Install
+## 安装
 
 ```bash
 pip install mcudubby
 ```
 
-From this release, you can also download the attached wheel or source distribution:
+也可以从本 Release 下载附件安装：
 
 - `mcudubby-0.4.0-py3-none-any.whl`
 - `mcudubby-0.4.0.tar.gz`
 
-## Notes
+## 注意事项
 
-This is the first public baseline. Hardware-facing workflows depend on local probe drivers, board wiring, target firmware symbols, and optional backend packages such as `pylink-square`.
+这是第一个公开基线版本。涉及真实硬件的功能依赖本机探针驱动、板卡接线、目标固件符号文件，以及可选后端依赖，例如 `pylink-square`。
