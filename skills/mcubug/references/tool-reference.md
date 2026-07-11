@@ -1,0 +1,134 @@
+# Tool Reference
+
+This page is the canonical grouped index for the public `mcudubby` MCP tools. Keep short
+workflow examples in [Quickstart](quickstart.md), scenario guidance in [AI Playbook](ai-playbook.md),
+and capability status in [Support Matrix](support-matrix.md).
+
+## Configuration And Bring-Up
+
+Board bring-up helpers:
+
+- `discover_keil_projects`
+- `configure_keil_project`
+- `board_smoke_test`
+
+Runtime configuration and target preflight:
+
+- `get_runtime_config`
+- `list_demo_profiles`
+- `load_demo_profile`
+- `configure_probe`
+- `configure_log`
+- `configure_elf`
+- `configure_build`
+- `connect_with_config`
+- `match_chip_name`
+- `get_target_info`
+- `list_supported_targets`
+
+## Probe Control And Stepping
+
+- `list_connected_probes`
+- `probe_connect`
+- `probe_disconnect`
+- `probe_halt`
+- `probe_resume`
+- `probe_reset`
+- `probe_step`
+- `continue_target`
+- `probe_continue_until`
+- `step_over`
+- `step_out`
+- `source_step`
+- `run_to_source`
+- `run_to_function`
+
+## Breakpoints And Watchpoints
+
+- `set_breakpoint`
+- `set_breakpoints_for_function_range`
+- `clear_breakpoint`
+- `clear_all_breakpoints`
+- `probe_set_watchpoint`
+- `probe_remove_watchpoint`
+- `probe_clear_all_watchpoints`
+
+## Registers, Memory, Flash, And State
+
+- `probe_read_registers`
+- `probe_read_fpu_registers`
+- `probe_read_mpu_regions`
+- `probe_read_memory`
+- `probe_write_memory`
+- `dump_memory`
+- `memory_find`
+- `memory_snapshot`
+- `memory_diff`
+- `read_memory_map`
+- `read_stopped_context`
+- `erase_flash`
+- `program_flash`
+- `verify_flash`
+- `read_cycle_counter`
+- `read_swo_log`
+
+## ELF And DWARF
+
+- `elf_load`
+- `elf_addr_to_source`
+- `elf_list_functions`
+- `elf_symbol_info`
+- `read_symbol_value`
+- `write_symbol_value`
+- `watch_symbol`
+- `disassemble`
+- `backtrace`
+- `dwarf_backtrace`
+- `get_locals`
+- `set_local`
+- `log_trace`
+- `reset_and_trace`
+- `compare_elf_to_flash`
+
+## Logs, RTOS, And RTT
+
+- `log_connect`
+- `log_disconnect`
+- `log_tail`
+- `list_rtos_tasks`
+- `rtos_task_context`
+- `read_rtt_log`
+- `read_stack_usage`
+
+## SVD And Peripheral Diagnosis
+
+- `svd_load`
+- `svd_list_peripherals`
+- `svd_get_registers`
+- `svd_read_peripheral`
+- `svd_write_register`
+- `svd_write_field`
+- `diagnose_peripheral_stuck`
+
+## Higher-Level Diagnosis
+
+- `diagnose`
+- `diagnose_hardfault`
+- `diagnose_startup_failure`
+- `diagnose_memory_corruption`
+- `diagnose_stack_overflow`
+- `diagnose_interrupt_issue`
+- `diagnose_clock_issue`
+- `run_debug_loop`
+
+## Build, Flash, GDB, And Lifecycle
+
+- `build_project`
+- `flash_firmware`
+- `start_gdb_server`
+- `stop_gdb_server`
+- `get_gdb_server_status`
+- `start_jlink_gdb_server`
+- `stop_jlink_gdb_server`
+- `get_jlink_gdb_server_status`
+- `disconnect_all`

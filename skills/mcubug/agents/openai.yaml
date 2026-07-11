@@ -1,0 +1,4 @@
+interface:
+  display_name: "MCU Bug"
+  short_description: "Use mcubug for embedded board debugging"
+  default_prompt: "Use $mcubug to diagnose an embedded board issue with probe, ELF, SVD, RTT, RTOS, and flash evidence."

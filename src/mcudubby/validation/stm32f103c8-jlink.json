@@ -1,0 +1,35 @@
+{
+  "id": "stm32f103c8-jlink",
+  "board": "Custom board",
+  "mcu": "STM32F103C8",
+  "backend": "jlink",
+  "probe": "J-Link",
+  "status": "validated",
+  "validated_tools": [
+    "probe_connect",
+    "probe_halt",
+    "probe_reset",
+    "probe_step",
+    "read_stopped_context",
+    "run_to_function",
+    "run_to_source",
+    "source_step",
+    "set_breakpoint",
+    "probe_set_watchpoint",
+    "erase_flash",
+    "program_flash",
+    "verify_flash",
+    "read_rtt_log",
+    "start_jlink_gdb_server",
+    "read_cycle_counter"
+  ],
+  "partial_tools": [
+    "list_rtos_tasks",
+    "rtos_task_context",
+    "read_swo_log"
+  ],
+  "limitations": [
+    "RTOS inspection is implemented but not yet a primary hardware-validated workflow on this board.",
+    "SWO text capture is blocked by board-level PB3/TRACESWO constraints."
+  ]
+}

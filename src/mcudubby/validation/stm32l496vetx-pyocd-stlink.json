@@ -1,0 +1,42 @@
+{
+  "id": "stm32l496vetx-pyocd-stlink",
+  "board": "ATK_PICTURE",
+  "mcu": "STM32L496VETx",
+  "backend": "pyocd",
+  "probe": "ST-Link",
+  "status": "validated",
+  "validated_tools": [
+    "probe_connect",
+    "probe_halt",
+    "read_stopped_context",
+    "elf_load",
+    "run_to_function",
+    "source_step",
+    "step_over",
+    "step_out",
+    "svd_read_peripheral",
+    "svd_write_field",
+    "erase_flash",
+    "program_flash",
+    "verify_flash",
+    "read_rtt_log",
+    "list_rtos_tasks",
+    "rtos_task_context",
+    "diagnose",
+    "diagnose_hardfault",
+    "diagnose_startup_failure",
+    "start_gdb_server"
+  ],
+  "validated_scenarios": [
+    "FreeRTOS queue",
+    "FreeRTOS binary semaphore",
+    "FreeRTOS software timer",
+    "FreeRTOS event group",
+    "FreeRTOS task notify",
+    "FreeRTOS mutex",
+    "ISR-to-task notify"
+  ],
+  "limitations": [
+    "Requires matching FreeRTOS symbols and ELF/AXF debug info."
+  ]
+}
