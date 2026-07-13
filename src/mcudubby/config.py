@@ -17,6 +17,7 @@ class ProbeConfig(BaseModel):
     target: str | None = None
     unique_id: str | None = None
     jlink_dll_path: str | None = None
+    probe_rs_sidecar_path: str | None = None
     pack_paths: list[str] = Field(default_factory=list)
     connect_attempts: list[ConnectAttempt] = Field(default_factory=list)
 

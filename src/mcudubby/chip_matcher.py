@@ -22,6 +22,7 @@ _ALIAS_TABLE = {
         "stm32l496ve": "STM32L496VETx",
         "stm32l496vetx": "STM32L496VETx",
     },
+    "probe-rs": {},
 }
 
 _BACKEND_ALIASES = {
@@ -32,6 +33,8 @@ _BACKEND_ALIASES = {
     "cmsis-dap": "pyocd",
     "jlink": "jlink",
     "j-link": "jlink",
+    "probe-rs": "probe-rs",
+    "probers": "probe-rs",
 }
 
 

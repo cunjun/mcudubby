@@ -1,0 +1,236 @@
+from __future__ import annotations
+
+import base64
+import json
+from collections import deque
+
+import pytest
+
+from mcudubby.backends.probe.base import ProbeCapability
+from mcudubby.backends.probe.probe_rs_backend import ProbeRsBackend
+from mcudubby.backends.probe.sidecar_client import SidecarProtocolError, SidecarRpcClient
+from mcudubby.session import create_probe_backend
+from mcudubby.session import SessionState
+from mcudubby.tools.configuration import configure_probe
+
+
+class _MemoryTransport:
+    def __init__(self, responses: list[dict]) -> None:
+        self.responses = deque(json.dumps(item) for item in responses)
+        self.requests: list[dict] = []
+        self.closed = False
+
+    def write_line(self, line: str) -> None:
+        self.requests.append(json.loads(line))
+
+    def read_line(self) -> str:
+        return self.responses.popleft()
+
+    def close(self) -> None:
+        self.closed = True
+
+
+def test_rpc_client_sends_versioned_request_and_returns_result() -> None:
+    transport = _MemoryTransport(
+        [{"jsonrpc": "2.0", "id": 1, "result": {"protocol_version": 1}}]
+    )
+    client = SidecarRpcClient(transport)
+
+    result = client.call("hello", {"client": "mcudubby"})
+
+    assert result == {"protocol_version": 1}
+    assert transport.requests == [
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "hello",
+            "params": {"client": "mcudubby"},
+        }
+    ]
+
+
+def test_rpc_client_rejects_mismatched_response_id() -> None:
+    client = SidecarRpcClient(
+        _MemoryTransport([{"jsonrpc": "2.0", "id": 99, "result": {}}])
+    )
+
+    with pytest.raises(SidecarProtocolError, match="response id"):
+        client.call("hello")
+
+
+def test_rpc_client_surfaces_sidecar_error() -> None:
+    client = SidecarRpcClient(
+        _MemoryTransport(
+            [
+                {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "error": {"code": -32000, "message": "probe busy"},
+                }
+            ]
+        )
+    )
+
+    with pytest.raises(SidecarProtocolError, match="probe busy"):
+        client.call("connect", {"target": "STM32F103C8"})
+
+
+class _FakeClient:
+    def __init__(self, results: dict[str, dict | list]) -> None:
+        self.results = results
+        self.calls: list[tuple[str, dict]] = []
+        self.closed = False
+
+    def call(self, method: str, params: dict | None = None):
+        self.calls.append((method, params or {}))
+        return self.results[method]
+
+    def close(self) -> None:
+        self.closed = True
+
+
+def test_probe_rs_backend_declares_minimal_sidecar_capabilities() -> None:
+    backend = ProbeRsBackend(client=_FakeClient({}))
+
+    assert ProbeCapability.CORE_CONTROL in backend.capabilities
+    assert ProbeCapability.CORE_REGISTERS in backend.capabilities
+    assert ProbeCapability.MEMORY_READ in backend.capabilities
+    assert ProbeCapability.MEMORY_WRITE in backend.capabilities
+    assert ProbeCapability.BREAKPOINTS in backend.capabilities
+    assert ProbeCapability.FLASH not in backend.capabilities
+    assert ProbeCapability.RTT_READ not in backend.capabilities
+
+
+def test_probe_rs_backend_connects_and_tracks_session() -> None:
+    client = _FakeClient(
+        {
+            "hello": {"protocol_version": 1, "sidecar_version": "0.1.0"},
+            "connect": {"session_id": "session-1", "target": "STM32F103C8"},
+        }
+    )
+    backend = ProbeRsBackend(client=client)
+
+    result = backend.connect("STM32F103C8", unique_id="probe-7")
+
+    assert result["status"] == "ok"
+    assert result["session_id"] == "session-1"
+    assert client.calls == [
+        ("hello", {"client": "mcudubby", "protocol_version": 1}),
+        ("connect", {"target": "STM32F103C8", "unique_id": "probe-7"}),
+    ]
+
+
+def test_probe_rs_backend_encodes_and_decodes_memory() -> None:
+    client = _FakeClient(
+        {
+            "hello": {"protocol_version": 1},
+            "connect": {"session_id": "session-1", "target": "chip"},
+            "read_memory": {"data_base64": base64.b64encode(b"\x01\x02").decode()},
+            "write_memory": {"bytes_written": 2},
+        }
+    )
+    backend = ProbeRsBackend(client=client)
+    backend.connect("chip")
+
+    assert backend.read_memory(0x20000000, 2) == b"\x01\x02"
+    backend.write_memory(0x20000000, b"\xaa\x55")
+
+    assert client.calls[-1] == (
+        "write_memory",
+        {
+            "session_id": "session-1",
+            "address": 0x20000000,
+            "data_base64": "qlU=",
+        },
+    )
+
+
+def test_probe_rs_backend_rejects_short_memory_response() -> None:
+    client = _FakeClient(
+        {
+            "hello": {"protocol_version": 1},
+            "connect": {"session_id": "session-1", "target": "chip"},
+            "read_memory": {"data_base64": base64.b64encode(b"\x01").decode()},
+        }
+    )
+    backend = ProbeRsBackend(client=client)
+    backend.connect("chip")
+
+    with pytest.raises(SidecarProtocolError, match="returned 1 byte"):
+        backend.read_memory(0x20000000, 2)
+
+
+def test_probe_rs_backend_rejects_partial_memory_write() -> None:
+    client = _FakeClient(
+        {
+            "hello": {"protocol_version": 1},
+            "connect": {"session_id": "session-1", "target": "chip"},
+            "write_memory": {"bytes_written": 1},
+        }
+    )
+    backend = ProbeRsBackend(client=client)
+    backend.connect("chip")
+
+    with pytest.raises(SidecarProtocolError, match="wrote 1 byte"):
+        backend.write_memory(0x20000000, b"\xaa\x55")
+
+
+def test_probe_rs_backend_clears_every_tracked_breakpoint() -> None:
+    client = _FakeClient(
+        {
+            "hello": {"protocol_version": 1},
+            "connect": {"session_id": "session-1", "target": "chip"},
+            "set_breakpoint": {},
+            "clear_breakpoint": {},
+        }
+    )
+    backend = ProbeRsBackend(client=client)
+    backend.connect("chip")
+    backend.set_breakpoint(0x08000100)
+    backend.set_breakpoint(0x08000200)
+
+    result = backend.clear_all_breakpoints()
+
+    assert result["cleared_count"] == 2
+    assert [call for call in client.calls if call[0] == "clear_breakpoint"] == [
+        ("clear_breakpoint", {"session_id": "session-1", "address": 0x08000100}),
+        ("clear_breakpoint", {"session_id": "session-1", "address": 0x08000200}),
+    ]
+
+
+def test_probe_rs_backend_disconnect_closes_sidecar_process() -> None:
+    client = _FakeClient(
+        {
+            "hello": {"protocol_version": 1},
+            "connect": {"session_id": "session-1", "target": "chip"},
+            "disconnect": {"session_id": "session-1"},
+        }
+    )
+    backend = ProbeRsBackend(client=client)
+    backend.connect("chip")
+
+    result = backend.disconnect()
+
+    assert result["status"] == "ok"
+    assert client.closed is True
+
+
+def test_backend_factory_accepts_probe_rs_alias() -> None:
+    backend = create_probe_backend("probe-rs")
+
+    assert isinstance(backend, ProbeRsBackend)
+
+
+def test_configure_probe_records_probe_rs_sidecar_path() -> None:
+    session = SessionState()
+
+    result = configure_probe(
+        session,
+        backend="probe-rs",
+        probe_rs_sidecar_path=r"E:\tools\mcudubby-probe-sidecar.exe",
+    )
+
+    assert result["status"] == "ok"
+    assert session.config.probe.backend == "probe-rs"
+    assert session.config.probe.probe_rs_sidecar_path.endswith("mcudubby-probe-sidecar.exe")
+    assert isinstance(session.probe, ProbeRsBackend)

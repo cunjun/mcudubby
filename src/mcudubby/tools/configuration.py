@@ -50,6 +50,7 @@ def configure_probe(
     unique_id: str | None = None,
     backend: str | None = None,
     jlink_dll_path: str | None = None,
+    probe_rs_sidecar_path: str | None = None,
     pack_path: str | None = None,
     pack_paths: list[str] | None = None,
     connect_attempts: list[dict[str, object]] | None = None,
@@ -61,7 +62,7 @@ def configure_probe(
         return {
             "status": "error",
             "summary": f"Unknown probe backend: {requested_backend}",
-            "supported_backends": ["jlink", "pyocd"],
+            "supported_backends": ["jlink", "probe-rs", "pyocd"],
         }
     next_jlink_dll_path = (
         jlink_dll_path if jlink_dll_path is not None else session.config.probe.jlink_dll_path
@@ -72,12 +73,15 @@ def configure_probe(
         recreate_probe = True
     if next_backend == "jlink" and jlink_dll_path is not None:
         recreate_probe = True
+    if next_backend == "probe-rs" and probe_rs_sidecar_path is not None:
+        recreate_probe = True
 
     if recreate_probe:
         try:
             session.probe = create_probe_backend(
                 next_backend,
                 jlink_dll_path=next_jlink_dll_path,
+                probe_rs_sidecar_path=probe_rs_sidecar_path,
             )
         except ValueError as exc:
             return {
@@ -97,6 +101,8 @@ def configure_probe(
         session.config.probe.unique_id = unique_id
     if jlink_dll_path is not None:
         session.config.probe.jlink_dll_path = jlink_dll_path
+    if probe_rs_sidecar_path is not None:
+        session.config.probe.probe_rs_sidecar_path = probe_rs_sidecar_path
     if pack_paths is not None:
         session.config.probe.pack_paths = list(pack_paths)
     if pack_path is not None:

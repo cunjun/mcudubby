@@ -7,6 +7,7 @@ from .backends.log.uart_backend import UartLogBackend
 from .backends.probe.jlink_backend import JLinkProbeBackend
 from .backends.probe.base import ProbeBackend
 from .backends.probe.pyocd_backend import PyOcdProbeBackend
+from .backends.probe.probe_rs_backend import ProbeRsBackend
 from .build_runtime import KeilBuildRuntime
 from .config import RuntimeConfig
 from .elf_manager import ElfManager
@@ -89,11 +90,17 @@ class BuildRuntimeBackend(Protocol):
     def flash(self, build: Any, elf: Any, timeout_seconds: int = 120) -> dict[str, Any]: ...
 
 
-def create_probe_backend(name: str, jlink_dll_path: str | None = None) -> ProbeBackend:
+def create_probe_backend(
+    name: str,
+    jlink_dll_path: str | None = None,
+    probe_rs_sidecar_path: str | None = None,
+) -> ProbeBackend:
     if name == "pyocd":
         return PyOcdProbeBackend()
     if name == "jlink":
         return JLinkProbeBackend(dll_path=jlink_dll_path)
+    if name == "probe-rs":
+        return ProbeRsBackend(sidecar_path=probe_rs_sidecar_path)
     raise ValueError(f"Unknown probe backend: {name}")
 
 
@@ -115,5 +122,6 @@ def create_default_session() -> SessionState:
     session.probe = create_probe_backend(
         session.config.probe.backend,
         jlink_dll_path=session.config.probe.jlink_dll_path,
+        probe_rs_sidecar_path=session.config.probe.probe_rs_sidecar_path,
     )
     return session

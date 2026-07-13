@@ -30,6 +30,11 @@ domain tools and should not contain hardware logic.
 `src/mcudubby/tools/` contains behavior-oriented modules that can be tested without MCP.
 Keep public compatibility modules as small re-export layers when a domain becomes a package.
 
+The experimental `probe-rs` backend uses `rust/probe-sidecar/` as a hardware execution sidecar.
+Python remains the owner of MCP, sessions, diagnosis, ELF/DWARF, SVD, and RTOS semantics. The
+sidecar owns probe-rs sessions and exchanges versioned, newline-delimited JSON-RPC messages over
+stdio. Keep this protocol internal; it is not a second MCP surface.
+
 `src/mcudubby/tools/probe/` is the probe domain package:
 
 - `core.py`: connection and basic target control
