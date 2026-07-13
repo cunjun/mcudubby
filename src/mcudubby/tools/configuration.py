@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from ..backends.probe.base import ProbeCapability, probe_supports
 from ..chip_matcher import match_chip_name as _match_chip_name
 from ..chip_matcher import normalize_backend_name as _normalize_backend_name
 from ..config import ConnectAttempt, connect_attempts_to_dicts, get_builtin_profiles
@@ -90,7 +91,7 @@ def configure_probe(
         matched_target = match_result["matched_target"]
         session.config.probe.target = matched_target
         patch_result = _resolve_device_patch(target, backend=next_backend)
-        if hasattr(session.probe, "set_connect_hints"):
+        if probe_supports(session.probe, ProbeCapability.CONNECT_HINTS):
             session.probe.set_connect_hints(patch_result["connect_hints"])
     if unique_id is not None:
         session.config.probe.unique_id = unique_id
@@ -105,9 +106,11 @@ def configure_probe(
         session.config.probe.connect_attempts = [
             ConnectAttempt.model_validate(attempt) for attempt in connect_attempts
         ]
-    if hasattr(session.probe, "set_pack_paths"):
+    if probe_supports(session.probe, ProbeCapability.PACK_PATHS):
         session.probe.set_pack_paths(session.config.probe.pack_paths)
-    if session.config.probe.connect_attempts and hasattr(session.probe, "set_connect_hints"):
+    if session.config.probe.connect_attempts and probe_supports(
+        session.probe, ProbeCapability.CONNECT_HINTS
+    ):
         session.probe.set_connect_hints(
             {"attempts": connect_attempts_to_dicts(session.config.probe.connect_attempts)}
         )

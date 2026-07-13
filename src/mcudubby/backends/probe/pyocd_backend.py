@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from ...errors import BackendUnavailableError
-from .base import ProbeBackend
+from .base import ProbeBackend, ProbeCapability
 
 try:
     from pyocd.core.helpers import ConnectHelper
@@ -47,6 +47,14 @@ def _discover_default_pack_paths(target: str) -> list[str]:
 
 class PyOcdProbeBackend(ProbeBackend):
     """Minimal pyOCD probe backend for v0.1."""
+
+    CAPABILITIES = ProbeBackend.CAPABILITIES | {
+        ProbeCapability.WATCHPOINTS,
+        ProbeCapability.FPU_REGISTERS,
+        ProbeCapability.FLASH,
+        ProbeCapability.CONNECT_HINTS,
+        ProbeCapability.PACK_PATHS,
+    }
 
     @classmethod
     def enumerate_probes(cls) -> list[dict]:

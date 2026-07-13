@@ -1,10 +1,75 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+from enum import Enum
+from typing import Any, ClassVar
+
+
+class ProbeCapability(str, Enum):
+    CORE_CONTROL = "core-control"
+    CORE_REGISTERS = "core-registers"
+    FAULT_REGISTERS = "fault-registers"
+    MEMORY_READ = "memory-read"
+    MEMORY_WRITE = "memory-write"
+    BREAKPOINTS = "breakpoints"
+    WATCHPOINTS = "watchpoints"
+    FPU_REGISTERS = "fpu-registers"
+    FLASH = "flash"
+    RTT_READ = "rtt-read"
+    DWT_CYCLE_COUNTER = "dwt-cycle-counter"
+    SWO = "swo"
+    ITM_TRACE = "itm-trace"
+    CONNECT_HINTS = "connect-hints"
+    PACK_PATHS = "pack-paths"
+
+
+_LEGACY_METHODS: dict[ProbeCapability, str] = {
+    ProbeCapability.CORE_CONTROL: "halt",
+    ProbeCapability.CORE_REGISTERS: "read_core_registers",
+    ProbeCapability.FAULT_REGISTERS: "read_fault_registers",
+    ProbeCapability.MEMORY_READ: "read_memory",
+    ProbeCapability.MEMORY_WRITE: "write_memory",
+    ProbeCapability.BREAKPOINTS: "set_breakpoint",
+    ProbeCapability.WATCHPOINTS: "set_watchpoint",
+    ProbeCapability.FPU_REGISTERS: "read_fpu_registers",
+    ProbeCapability.FLASH: "program_flash",
+    ProbeCapability.RTT_READ: "read_rtt_log",
+    ProbeCapability.DWT_CYCLE_COUNTER: "read_cycle_counter",
+    ProbeCapability.SWO: "read_swo_log",
+    ProbeCapability.ITM_TRACE: "read_itm_trace",
+    ProbeCapability.CONNECT_HINTS: "set_connect_hints",
+    ProbeCapability.PACK_PATHS: "set_pack_paths",
+}
+
+
+def probe_supports(probe: object, capability: ProbeCapability) -> bool:
+    """Check a backend capability, with a compatibility path for lightweight test doubles."""
+    declared = getattr(probe, "capabilities", None)
+    if declared is not None:
+        return capability in declared
+    method_name = _LEGACY_METHODS[capability]
+    return callable(getattr(probe, method_name, None))
 
 
 class ProbeBackend(ABC):
+    CAPABILITIES: ClassVar[frozenset[ProbeCapability]] = frozenset(
+        {
+            ProbeCapability.CORE_CONTROL,
+            ProbeCapability.CORE_REGISTERS,
+            ProbeCapability.FAULT_REGISTERS,
+            ProbeCapability.MEMORY_READ,
+            ProbeCapability.MEMORY_WRITE,
+            ProbeCapability.BREAKPOINTS,
+        }
+    )
+
+    @property
+    def capabilities(self) -> frozenset[ProbeCapability]:
+        return self.CAPABILITIES
+
+    def supports(self, capability: ProbeCapability) -> bool:
+        return capability in self.capabilities
+
     @classmethod
     def enumerate_probes(cls) -> list[dict[str, Any]]:
         """Return a list of connected probes visible to this backend.

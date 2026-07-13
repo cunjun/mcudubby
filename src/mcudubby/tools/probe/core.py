@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from ...backends.probe.base import ProbeCapability, probe_supports
 from ...chip_matcher import match_chip_name as _match_chip_name
 from ...config import connect_attempts_to_dicts
 from ...device_patch_manager import resolve_device_patch as _resolve_device_patch
@@ -21,7 +22,7 @@ def list_connected_probes(session: SessionState) -> dict:
 def connect_probe(session: SessionState, target: str, unique_id: str | None = None) -> dict:
     match_result = _match_chip_name(target, backend=session.config.probe.backend)
     patch_result = _resolve_device_patch(target, backend=session.config.probe.backend)
-    if hasattr(session.probe, "set_connect_hints"):
+    if probe_supports(session.probe, ProbeCapability.CONNECT_HINTS):
         custom_attempts = getattr(session.config.probe, "connect_attempts", [])
         hints = (
             {"attempts": connect_attempts_to_dicts(custom_attempts)}
@@ -29,7 +30,7 @@ def connect_probe(session: SessionState, target: str, unique_id: str | None = No
             else patch_result["connect_hints"]
         )
         session.probe.set_connect_hints(hints)
-    if hasattr(session.probe, "set_pack_paths"):
+    if probe_supports(session.probe, ProbeCapability.PACK_PATHS):
         session.probe.set_pack_paths(getattr(session.config.probe, "pack_paths", []))
     result = session.probe.connect(target=match_result["matched_target"], unique_id=unique_id)
     if result.get("status") == "ok":

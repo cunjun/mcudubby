@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from ...backends.probe.base import ProbeCapability, probe_supports
 from ...session import SessionState
 from ...tool_safety import require_tool_confirmation
 
@@ -29,6 +30,11 @@ def clear_all_watchpoints(session: SessionState, confirm: bool = False) -> dict:
 
 
 def read_fpu_registers(session: SessionState) -> dict:
+    if not probe_supports(session.probe, ProbeCapability.FPU_REGISTERS):
+        return {
+            "status": "error",
+            "summary": "Active probe backend does not support FPU register reads.",
+        }
     try:
         values = session.probe.read_fpu_registers()
     except NotImplementedError:
@@ -46,7 +52,7 @@ def read_fpu_registers(session: SessionState) -> dict:
 
 
 def read_cycle_counter(session: SessionState) -> dict:
-    if not hasattr(session.probe, "read_cycle_counter"):
+    if not probe_supports(session.probe, ProbeCapability.DWT_CYCLE_COUNTER):
         return {
             "status": "error",
             "summary": "Active probe backend does not support DWT cycle counter reads.",
@@ -72,7 +78,7 @@ def read_swo_log(
     max_bytes: int = 1024,
     port_mask: int = 0x01,
 ) -> dict:
-    if not hasattr(session.probe, "read_swo_log"):
+    if not probe_supports(session.probe, ProbeCapability.SWO):
         return {
             "status": "error",
             "summary": "Active probe backend does not support SWO log reads.",
@@ -104,7 +110,7 @@ def read_itm_trace(
     max_bytes: int = 1024,
     port_mask: int | None = None,
 ) -> dict:
-    if not hasattr(session.probe, "read_itm_trace"):
+    if not probe_supports(session.probe, ProbeCapability.ITM_TRACE):
         return {
             "status": "error",
             "summary": "Active probe backend does not support ITM trace reads.",

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from ...backends.probe.base import ProbeCapability, probe_supports
 from ...session import SessionState
 
 
@@ -11,7 +12,7 @@ def read_rtt_log(
     search_size: int = 0x50000,
 ) -> dict:
     backend_result = None
-    if hasattr(session.probe, "read_rtt_log"):
+    if probe_supports(session.probe, ProbeCapability.RTT_READ):
         try:
             backend_result = session.probe.read_rtt_log(channel=channel, max_bytes=max_bytes)
         except Exception as e:

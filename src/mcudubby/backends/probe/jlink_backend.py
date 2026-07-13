@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from ...errors import BackendUnavailableError
-from .base import ProbeBackend
+from .base import ProbeBackend, ProbeCapability
 
 try:  # pragma: no cover - import availability depends on local environment
     import pylink
@@ -19,6 +19,17 @@ except ImportError:  # pragma: no cover
 
 class JLinkProbeBackend(ProbeBackend):
     """Minimal J-Link probe backend built on top of pylink-square."""
+
+    CAPABILITIES = ProbeBackend.CAPABILITIES | {
+        ProbeCapability.WATCHPOINTS,
+        ProbeCapability.FPU_REGISTERS,
+        ProbeCapability.FLASH,
+        ProbeCapability.RTT_READ,
+        ProbeCapability.DWT_CYCLE_COUNTER,
+        ProbeCapability.SWO,
+        ProbeCapability.ITM_TRACE,
+        ProbeCapability.CONNECT_HINTS,
+    }
 
     _DEMCR = 0xE000EDFC
     _DWT_CTRL = 0xE0001000
