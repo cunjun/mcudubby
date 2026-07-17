@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
@@ -115,6 +116,7 @@ class SessionState:
     config: RuntimeConfig = field(default_factory=RuntimeConfig)
     memory_snapshots: dict[str, dict[str, Any]] = field(default_factory=dict)
     conditional_breakpoints: dict[int, dict[str, Any]] = field(default_factory=dict)
+    execution_lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False)
 
 
 def create_default_session() -> SessionState:
