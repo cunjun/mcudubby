@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ...session import SessionState
+from .breakpoint_lifecycle import temporary_breakpoint
 from .conditions import _OPS, _evaluate_condition
 from .context import step_instruction
 
@@ -34,53 +35,51 @@ def continue_until(
         "condition_value": condition_value,
     }
     has_condition = condition_symbol is not None or condition_register is not None
-    session.probe.set_breakpoint(target_address)
-
     try:
-        for hit_count in range(1, max_hits + 1):
-            result = session.probe.continue_target(
-                timeout_seconds=timeout_seconds,
-                poll_interval_seconds=0.05,
-            )
-            if result.get("stop_reason") == "timeout":
-                session.probe.clear_breakpoint(target_address)
-                result["summary"] = "Timed out before condition was met; breakpoint cleared."
-                result["condition_met"] = False
-                result["hit_count"] = hit_count - 1
-                result["breakpoint_address"] = hex(target_address)
-                return result
-
-            core = session.probe.read_core_registers()
-            pc = int(core["pc"]) & ~1
-            if pc not in {target_address, target_address + 2, target_address + 4}:
-                continue
-
-            if not has_condition or _evaluate_condition(session, _cond):
-                session.probe.clear_breakpoint(target_address)
-                result.update(
-                    {
-                        "summary": "Condition met at breakpoint; breakpoint cleared.",
-                        "condition_met": True,
-                        "hit_count": hit_count,
-                        "breakpoint_address": hex(target_address),
-                    }
+        with temporary_breakpoint(session.probe, target_address) as created:
+            disposition = "cleared" if created else "preserved"
+            for hit_count in range(1, max_hits + 1):
+                result = session.probe.continue_target(
+                    timeout_seconds=timeout_seconds,
+                    poll_interval_seconds=0.05,
                 )
-                return result
+                if result.get("stop_reason") == "timeout":
+                    result["summary"] = (
+                        f"Timed out before condition was met; breakpoint {disposition}."
+                    )
+                    result["condition_met"] = False
+                    result["hit_count"] = hit_count - 1
+                    result["breakpoint_address"] = hex(target_address)
+                    return result
 
-        session.probe.clear_breakpoint(target_address)
-        return {
-            "status": "ok",
-            "summary": "Maximum breakpoint hits reached before condition was met; breakpoint cleared.",
-            "stop_reason": "max_hits_reached",
-            "condition_met": False,
-            "hit_count": max_hits,
-            "breakpoint_address": hex(target_address),
-        }
+                core = session.probe.read_core_registers()
+                pc = int(core["pc"]) & ~1
+                if pc not in {target_address, target_address + 2, target_address + 4}:
+                    continue
+
+                if not has_condition or _evaluate_condition(session, _cond):
+                    result.update(
+                        {
+                            "summary": f"Condition met at breakpoint; breakpoint {disposition}.",
+                            "condition_met": True,
+                            "hit_count": hit_count,
+                            "breakpoint_address": hex(target_address),
+                        }
+                    )
+                    return result
+
+            return {
+                "status": "ok",
+                "summary": (
+                    "Maximum breakpoint hits reached before condition was met; "
+                    f"breakpoint {disposition}."
+                ),
+                "stop_reason": "max_hits_reached",
+                "condition_met": False,
+                "hit_count": max_hits,
+                "breakpoint_address": hex(target_address),
+            }
     except Exception as exc:
-        try:
-            session.probe.clear_breakpoint(target_address)
-        except Exception:
-            pass
         return {
             "status": "error",
             "summary": str(exc),
@@ -213,13 +212,10 @@ def step_out(session: SessionState, timeout_seconds: float = 5.0) -> dict:
     if ret_addr is None:
         ret_addr = core["lr"] & ~1
 
-    session.probe.set_breakpoint(ret_addr)
-    try:
+    with temporary_breakpoint(session.probe, ret_addr):
         result = session.probe.continue_target(
             timeout_seconds=timeout_seconds, poll_interval_seconds=0.05
         )
-    finally:
-        session.probe.clear_breakpoint(ret_addr)
 
     new_pc = int(result.get("pc", hex(ret_addr)), 16)
     src = (
@@ -257,11 +253,8 @@ def step_over(session: SessionState, max_source_instructions: int = 100) -> dict
     insn = insns[0]
     if insn.mnemonic.lower() in ("bl", "blx"):
         return_addr = insn.address + insn.size
-        session.probe.set_breakpoint(return_addr)
-        try:
+        with temporary_breakpoint(session.probe, return_addr):
             result = session.probe.continue_target(timeout_seconds=5.0, poll_interval_seconds=0.05)
-        finally:
-            session.probe.clear_breakpoint(return_addr)
         new_pc = int(result.get("pc", hex(return_addr)), 16)
         src = (
             session.elf.addr_to_source(new_pc)

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from mcudubby.tools.probe import (
     _evaluate_condition,
     clear_all_breakpoints,
@@ -328,6 +330,22 @@ def test_clear_all_breakpoints_clears_conditions():
     assert session.conditional_breakpoints == {}
 
 
+def test_clear_all_breakpoints_preserves_conditions_when_backend_fails():
+    probe = _FakeProbeStaticRegister(0x08001234, {"pc": 0x08001234})
+    session = _FakeSession(probe)
+    session.conditional_breakpoints[0x08001234] = {"condition_register": "r0"}
+
+    def fail_clear_all():
+        raise RuntimeError("probe disconnected")
+
+    probe.clear_all_breakpoints = fail_clear_all
+
+    with pytest.raises(RuntimeError, match="probe disconnected"):
+        clear_all_breakpoints(session, confirm=True)
+
+    assert 0x08001234 in session.conditional_breakpoints
+
+
 def test_list_conditional_breakpoints_empty():
     probe = _FakeProbeStaticRegister(0x08001234, {"pc": 0x08001234})
     session = _FakeSession(probe)
@@ -373,6 +391,19 @@ def test_continue_until_no_condition_halts_immediately():
     assert result["condition_met"] is True
     assert result["hit_count"] == 1
     assert result["breakpoint_address"] == hex(bp_addr)
+
+
+def test_continue_until_preserves_preexisting_breakpoint():
+    """Temporary execution helpers must not remove a breakpoint owned by the user."""
+    bp_addr = 0x08001234
+    probe = _FakeProbeStaticRegister(bp_addr, {"pc": bp_addr, "r0": 0})
+    probe._breakpoints.add(bp_addr)
+    session = _FakeSessionForContinueUntil(probe)
+
+    result = continue_until(session, address=bp_addr)
+
+    assert result["condition_met"] is True
+    assert bp_addr in probe._breakpoints
 
 
 def test_continue_until_with_register_condition_skips_until_met():

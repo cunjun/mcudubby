@@ -96,9 +96,24 @@ class ProbeRsBackend(ProbeBackend):
         while time.monotonic() < deadline:
             state = self.get_state()
             if state != "running":
-                return {"status": "ok", "summary": "Target stopped.", "state": state}
+                registers = self.read_core_registers()
+                return {
+                    "status": "ok",
+                    "summary": "Target stopped.",
+                    "state": state,
+                    "stop_reason": "target_stopped",
+                    "pc": hex(registers["pc"]),
+                }
             time.sleep(poll_interval_seconds)
-        return {"status": "error", "summary": "Timed out waiting for target to stop."}
+        self.halt()
+        registers = self.read_core_registers()
+        return {
+            "status": "ok",
+            "summary": "Timed out waiting for target to stop; target halted.",
+            "state": "halted",
+            "stop_reason": "timeout",
+            "pc": hex(registers["pc"]),
+        }
 
     def read_core_registers(self) -> dict[str, int]:
         result = self._rpc().call("read_core_registers", self._session_params())

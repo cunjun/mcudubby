@@ -4,6 +4,7 @@ from mcudubby.tools.probe import clear_breakpoint
 from mcudubby.tools.probe import continue_target
 from mcudubby.tools.probe import read_stopped_context
 from mcudubby.tools.probe import set_breakpoint
+from mcudubby.tools.probe import set_breakpoints_for_function_range
 
 
 class _FakeBreakpointProbe:
@@ -85,6 +86,12 @@ class _FakeElf:
             0x08004567: {"symbol": "main", "source": None},
         }
         return {"address": hex(address), **mapping.get(address, {"symbol": None, "source": None})}
+
+    def list_functions(self) -> list[dict[str, str]]:
+        return [
+            {"name": "sensor_init", "address": "0x8001234"},
+            {"name": "main", "address": "0x8008805"},
+        ]
 
 
 class _FakeLog:
@@ -168,3 +175,19 @@ def test_set_breakpoint_normalizes_thumb_symbol_address() -> None:
     assert result["status"] == "ok"
     assert result["breakpoint"]["address"] == "0x8008804"
     assert 0x08008804 in session.probe.breakpoints
+
+
+def test_set_breakpoints_for_function_range_requires_confirmation() -> None:
+    session = SessionState()
+    session.probe = _FakeBreakpointProbe()
+    session.elf = _FakeElf()
+
+    result = set_breakpoints_for_function_range(
+        session,
+        start_symbol="sensor_init",
+        end_symbol="main",
+    )
+
+    assert result["status"] == "error"
+    assert result["safety"]["level"] == "state-changing"
+    assert session.probe.breakpoints == set()

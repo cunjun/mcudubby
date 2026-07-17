@@ -70,6 +70,11 @@ class ProbeBackend(ABC):
     def supports(self, capability: ProbeCapability) -> bool:
         return capability in self.capabilities
 
+    @property
+    def breakpoint_addresses(self) -> frozenset[int]:
+        """Return the breakpoints currently tracked by the backend."""
+        return frozenset(getattr(self, "_breakpoints", ()))
+
     @classmethod
     def enumerate_probes(cls) -> list[dict[str, Any]]:
         """Return a list of connected probes visible to this backend.

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from ...session import SessionState
+from ...tool_safety import require_tool_confirmation
+from .breakpoint_lifecycle import temporary_breakpoint
 
 
 def addr_to_source(session: SessionState, address: int) -> dict:
@@ -34,13 +36,10 @@ def run_to_source(
             "summary": f"No address found for {file}:{line}. Check file name and line number.",
         }
     target_addr = addrs[0]
-    session.probe.set_breakpoint(target_addr)
-    try:
+    with temporary_breakpoint(session.probe, target_addr):
         result = session.probe.continue_target(
             timeout_seconds=timeout_seconds, poll_interval_seconds=0.05
         )
-    finally:
-        session.probe.clear_breakpoint(target_addr)
     new_pc = int(result.get("pc", hex(target_addr)), 16)
     src = session.elf.addr_to_source(new_pc)
     sym = session.elf.resolve_address(new_pc)["symbol"]
@@ -68,14 +67,11 @@ def run_to_function(
             return {"status": "error", "summary": "ELF not loaded."}
 
         addr = int(resolved["address"], 16) & ~1
-        session.probe.set_breakpoint(addr)
-        try:
+        with temporary_breakpoint(session.probe, addr):
             result = session.probe.continue_target(
                 timeout_seconds=timeout_seconds,
                 poll_interval_seconds=0.05,
             )
-        finally:
-            session.probe.clear_breakpoint(addr)
 
         new_pc = int(result.get("pc", hex(addr)), 16)
         if session.elf.is_loaded:
@@ -102,7 +98,10 @@ def set_breakpoints_for_function_range(
     session: SessionState,
     start_symbol: str,
     end_symbol: str,
+    confirm: bool = False,
 ) -> dict:
+    if blocked := require_tool_confirmation("set_breakpoints_for_function_range", confirm):
+        return blocked
     if not session.elf.is_loaded:
         return {"status": "error", "summary": "ELF not loaded."}
 

@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import json
 import os
+import queue
 import shutil
 import subprocess
+import threading
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -17,7 +19,7 @@ class SidecarProtocolError(RuntimeError):
 class LineTransport(Protocol):
     def write_line(self, line: str) -> None: ...
 
-    def read_line(self) -> str: ...
+    def read_line(self, timeout_seconds: float | None = None) -> str: ...
 
     def close(self) -> None: ...
 
@@ -47,6 +49,17 @@ class SidecarProcessTransport:
             encoding="utf-8",
             bufsize=1,
         )
+        self._responses: queue.Queue[str | None] = queue.Queue(maxsize=1)
+        self._reader = threading.Thread(target=self._read_responses, daemon=True)
+        self._reader.start()
+
+    def _read_responses(self) -> None:
+        if self._process.stdout is None:
+            self._responses.put(None)
+            return
+        for line in self._process.stdout:
+            self._responses.put(line)
+        self._responses.put(None)
 
     def write_line(self, line: str) -> None:
         if self._process.stdin is None:
@@ -54,11 +67,14 @@ class SidecarProcessTransport:
         self._process.stdin.write(line + "\n")
         self._process.stdin.flush()
 
-    def read_line(self) -> str:
-        if self._process.stdout is None:
-            raise SidecarProtocolError("sidecar stdout is unavailable")
-        line = self._process.stdout.readline()
-        if not line:
+    def read_line(self, timeout_seconds: float | None = None) -> str:
+        try:
+            line = self._responses.get(timeout=timeout_seconds)
+        except queue.Empty as exc:
+            raise SidecarProtocolError(
+                f"sidecar response timed out after {timeout_seconds:g} seconds"
+            ) from exc
+        if line is None:
             raise SidecarProtocolError("sidecar exited without a response")
         return line
 
@@ -73,37 +89,44 @@ class SidecarProcessTransport:
 
 
 class SidecarRpcClient:
-    def __init__(self, transport: LineTransport) -> None:
+    def __init__(self, transport: LineTransport, response_timeout_seconds: float = 10.0) -> None:
         self._transport = transport
+        self._response_timeout_seconds = response_timeout_seconds
         self._next_id = 1
+        self._call_lock = threading.Lock()
 
     @classmethod
     def start(cls, executable: str | None = None) -> SidecarRpcClient:
         return cls(SidecarProcessTransport(resolve_sidecar_path(executable)))
 
     def call(self, method: str, params: dict[str, Any] | None = None) -> Any:
-        request_id = self._next_id
-        self._next_id += 1
-        request = {
-            "jsonrpc": "2.0",
-            "id": request_id,
-            "method": method,
-            "params": params or {},
-        }
-        self._transport.write_line(json.dumps(request, separators=(",", ":")))
-        try:
-            response = json.loads(self._transport.read_line())
-        except json.JSONDecodeError as exc:
-            raise SidecarProtocolError(f"invalid sidecar JSON response: {exc}") from exc
-        if response.get("jsonrpc") != "2.0":
-            raise SidecarProtocolError("sidecar response has an invalid jsonrpc version")
-        if response.get("id") != request_id:
-            raise SidecarProtocolError("sidecar response id does not match request id")
-        if error := response.get("error"):
-            raise SidecarProtocolError(error.get("message", "sidecar request failed"))
-        if "result" not in response:
-            raise SidecarProtocolError("sidecar response is missing result")
-        return response["result"]
+        with self._call_lock:
+            request_id = self._next_id
+            self._next_id += 1
+            request = {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "method": method,
+                "params": params or {},
+            }
+            self._transport.write_line(json.dumps(request, separators=(",", ":")))
+            try:
+                response_line = self._transport.read_line(self._response_timeout_seconds)
+                response = json.loads(response_line)
+            except SidecarProtocolError:
+                self._transport.close()
+                raise
+            except json.JSONDecodeError as exc:
+                raise SidecarProtocolError(f"invalid sidecar JSON response: {exc}") from exc
+            if response.get("jsonrpc") != "2.0":
+                raise SidecarProtocolError("sidecar response has an invalid jsonrpc version")
+            if response.get("id") != request_id:
+                raise SidecarProtocolError("sidecar response id does not match request id")
+            if error := response.get("error"):
+                raise SidecarProtocolError(error.get("message", "sidecar request failed"))
+            if "result" not in response:
+                raise SidecarProtocolError("sidecar response is missing result")
+            return response["result"]
 
     def close(self) -> None:
         self._transport.close()

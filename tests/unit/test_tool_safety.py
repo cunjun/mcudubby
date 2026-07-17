@@ -1,3 +1,6 @@
+import ast
+from pathlib import Path
+
 from mcudubby.tool_safety import (
     TOOL_SAFETY,
     get_tool_safety,
@@ -64,6 +67,18 @@ def test_tool_safety_marks_read_only_and_destructive_tools() -> None:
     assert get_tool_safety("probe_read_mpu_regions")["level"] == "state-changing"
     assert get_tool_safety("erase_flash")["level"] == "persistent-destructive"
     assert get_tool_safety("program_flash")["level"] == "persistent-destructive"
+
+
+def test_every_registered_mcp_tool_has_safety_metadata() -> None:
+    mcp_tools_dir = Path(__file__).parents[2] / "src" / "mcudubby" / "mcp_tools"
+    registered_tools: set[str] = set()
+    for path in mcp_tools_dir.rglob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        registered_tools.update(
+            node.name for node in ast.walk(tree) if isinstance(node, ast.AsyncFunctionDef)
+        )
+
+    assert set(TOOL_SAFETY) == registered_tools
 
 
 def test_list_tool_safety_is_machine_readable() -> None:

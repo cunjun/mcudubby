@@ -63,14 +63,21 @@ def register_probe_control_tools(mcp, session: SessionState) -> None:
         return probe_tools.list_conditional_breakpoints(session)
 
     @mcp.tool()
-    async def set_breakpoints_for_function_range(start_symbol: str, end_symbol: str) -> dict:
+    async def set_breakpoints_for_function_range(
+        start_symbol: str,
+        end_symbol: str,
+        confirm: bool = False,
+    ) -> dict:
         """Set breakpoints on all ELF functions whose address falls between two symbols.
 
         Useful for tracing all calls within a module (e.g. start=_uart_start, end=_uart_end).
         Requires ELF loaded and probe connected.
         """
         return probe_tools.set_breakpoints_for_function_range(
-            session, start_symbol=start_symbol, end_symbol=end_symbol
+            session,
+            start_symbol=start_symbol,
+            end_symbol=end_symbol,
+            confirm=confirm,
         )
 
     @mcp.tool()

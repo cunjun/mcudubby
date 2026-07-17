@@ -78,7 +78,7 @@ def configure_probe(
 
     if recreate_probe:
         try:
-            session.probe = create_probe_backend(
+            replacement_probe = create_probe_backend(
                 next_backend,
                 jlink_dll_path=next_jlink_dll_path,
                 probe_rs_sidecar_path=probe_rs_sidecar_path,
@@ -88,6 +88,20 @@ def configure_probe(
                 "status": "error",
                 "summary": str(exc),
             }
+        try:
+            disconnect_result = session.probe.disconnect()
+            if disconnect_result.get("status") == "error":
+                raise RuntimeError(disconnect_result.get("summary", "disconnect failed"))
+        except Exception as exc:
+            try:
+                replacement_probe.disconnect()
+            except Exception:
+                pass
+            return {
+                "status": "error",
+                "summary": f"Could not disconnect the current probe backend: {exc}",
+            }
+        session.probe = replacement_probe
         session.config.probe.backend = next_backend
     matched_target = None
     if target is not None:

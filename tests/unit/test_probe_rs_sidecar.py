@@ -6,6 +6,7 @@ from collections import deque
 
 import pytest
 
+import mcudubby.tools.configuration as configuration
 from mcudubby.backends.probe.base import ProbeCapability
 from mcudubby.backends.probe.probe_rs_backend import ProbeRsBackend
 from mcudubby.backends.probe.sidecar_client import SidecarProtocolError, SidecarRpcClient
@@ -18,12 +19,14 @@ class _MemoryTransport:
     def __init__(self, responses: list[dict]) -> None:
         self.responses = deque(json.dumps(item) for item in responses)
         self.requests: list[dict] = []
+        self.read_timeouts: list[float | None] = []
         self.closed = False
 
     def write_line(self, line: str) -> None:
         self.requests.append(json.loads(line))
 
-    def read_line(self) -> str:
+    def read_line(self, timeout_seconds: float | None = None) -> str:
+        self.read_timeouts.append(timeout_seconds)
         return self.responses.popleft()
 
     def close(self) -> None:
@@ -47,6 +50,15 @@ def test_rpc_client_sends_versioned_request_and_returns_result() -> None:
             "params": {"client": "mcudubby"},
         }
     ]
+
+
+def test_rpc_client_applies_a_bounded_response_timeout() -> None:
+    transport = _MemoryTransport([{"jsonrpc": "2.0", "id": 1, "result": {}}])
+    client = SidecarRpcClient(transport, response_timeout_seconds=0.25)
+
+    client.call("hello")
+
+    assert transport.read_timeouts == [0.25]
 
 
 def test_rpc_client_rejects_mismatched_response_id() -> None:
@@ -198,6 +210,31 @@ def test_probe_rs_backend_clears_every_tracked_breakpoint() -> None:
     ]
 
 
+def test_probe_rs_continue_timeout_halts_target_and_reports_context() -> None:
+    client = _FakeClient(
+        {
+            "hello": {"protocol_version": 1},
+            "connect": {"session_id": "session-1", "target": "chip"},
+            "resume": {},
+            "halt": {},
+            "read_core_registers": {"registers": {"pc": 0x08001234}},
+        }
+    )
+    backend = ProbeRsBackend(client=client)
+    backend.connect("chip")
+
+    result = backend.continue_target(timeout_seconds=0)
+
+    assert result == {
+        "status": "ok",
+        "summary": "Timed out waiting for target to stop; target halted.",
+        "state": "halted",
+        "stop_reason": "timeout",
+        "pc": "0x8001234",
+    }
+    assert ("halt", {"session_id": "session-1"}) in client.calls
+
+
 def test_probe_rs_backend_disconnect_closes_sidecar_process() -> None:
     client = _FakeClient(
         {
@@ -234,3 +271,25 @@ def test_configure_probe_records_probe_rs_sidecar_path() -> None:
     assert session.config.probe.backend == "probe-rs"
     assert session.config.probe.probe_rs_sidecar_path.endswith("mcudubby-probe-sidecar.exe")
     assert isinstance(session.probe, ProbeRsBackend)
+
+
+def test_configure_probe_disconnects_old_backend_before_switch(monkeypatch) -> None:
+    class _Backend:
+        def __init__(self) -> None:
+            self.disconnected = False
+
+        def disconnect(self) -> dict:
+            self.disconnected = True
+            return {"status": "ok"}
+
+    session = SessionState()
+    old_backend = _Backend()
+    new_backend = _Backend()
+    session.probe = old_backend
+    monkeypatch.setattr(configuration, "create_probe_backend", lambda *args, **kwargs: new_backend)
+
+    result = configure_probe(session, backend="probe-rs")
+
+    assert result["status"] == "ok"
+    assert old_backend.disconnected is True
+    assert session.probe is new_backend

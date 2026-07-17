@@ -74,7 +74,11 @@ def register_probe_rtos_tools(mcp, session: SessionState) -> None:
         )
 
     @mcp.tool()
-    async def rtos_switch_context(task_name: str, task_name_len: int = 16) -> dict:
+    async def rtos_switch_context(
+        task_name: str,
+        task_name_len: int = 16,
+        confirm: bool = False,
+    ) -> dict:
         """Switch CPU context to a blocked or suspended FreeRTOS task.
 
         Uses the saved exception frame from the task's stack (stored in TCB.pxTopOfStack),
@@ -85,7 +89,10 @@ def register_probe_rtos_tools(mcp, session: SessionState) -> None:
         Example: rtos_switch_context('idle_task')
         """
         return probe_tools.rtos_switch_context(
-            session, task_name=task_name, task_name_len=task_name_len
+            session,
+            task_name=task_name,
+            task_name_len=task_name_len,
+            confirm=confirm,
         )
 
     @mcp.tool()

@@ -82,9 +82,10 @@ def clear_breakpoint(
 def clear_all_breakpoints(session: SessionState, confirm: bool = False) -> dict:
     if blocked := require_tool_confirmation("clear_all_breakpoints", confirm):
         return blocked
-    if hasattr(session, "conditional_breakpoints"):
+    result = session.probe.clear_all_breakpoints()
+    if result.get("status") != "error" and hasattr(session, "conditional_breakpoints"):
         session.conditional_breakpoints.clear()
-    return session.probe.clear_all_breakpoints()
+    return result
 
 
 def list_conditional_breakpoints(session: SessionState) -> dict:
