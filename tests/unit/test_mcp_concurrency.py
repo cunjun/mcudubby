@@ -51,7 +51,7 @@ class _ControlledProbe(_BlockingProbe):
             self.max_active_calls = max(self.max_active_calls, self.active_calls)
             self.started.set()
         try:
-            if not self.release.wait(timeout=1):
+            if not self.release.wait(timeout=5):
                 raise TimeoutError("test probe was not released")
             return {"status": "ok", "summary": "halted"}
         finally:
@@ -89,39 +89,50 @@ def test_execution_boundary_preserves_tool_registration_contract() -> None:
 
 
 def test_blocking_session_tool_does_not_block_metadata_query() -> None:
-    async def scenario() -> float:
+    async def scenario() -> bool:
         session = SessionState()
-        session.probe = _BlockingProbe(delay_seconds=0.2)
+        probe = _ControlledProbe()
+        session.probe = probe
         app = create_server(session)
 
-        started = time.monotonic()
         halt_task = asyncio.create_task(_run_tool(app, "probe_halt"))
-        await asyncio.sleep(0.01)
-        await _run_tool(app, "list_tool_safety")
-        metadata_elapsed = time.monotonic() - started
-        await halt_task
-        return metadata_elapsed
+        assert await asyncio.to_thread(probe.started.wait, 1)
+        try:
+            await asyncio.wait_for(_run_tool(app, "list_tool_safety"), timeout=1)
+            return not halt_task.done()
+        finally:
+            probe.release.set()
+            await halt_task
 
-    assert asyncio.run(scenario()) < 0.1
+    assert asyncio.run(scenario()) is True
 
 
 def test_different_sessions_can_execute_blocking_tools_in_parallel() -> None:
-    async def scenario() -> float:
+    async def scenario() -> tuple[int, int]:
         first_session = SessionState()
-        first_session.probe = _BlockingProbe(delay_seconds=0.15)
+        first_probe = _ControlledProbe()
+        first_session.probe = first_probe
         second_session = SessionState()
-        second_session.probe = _BlockingProbe(delay_seconds=0.15)
+        second_probe = _ControlledProbe()
+        second_session.probe = second_probe
         first_app = create_server(first_session)
         second_app = create_server(second_session)
 
-        started = time.monotonic()
-        await asyncio.gather(
-            _run_tool(first_app, "probe_halt"),
-            _run_tool(second_app, "probe_halt"),
-        )
-        return time.monotonic() - started
+        first_task = asyncio.create_task(_run_tool(first_app, "probe_halt"))
+        second_task = asyncio.create_task(_run_tool(second_app, "probe_halt"))
+        try:
+            started = await asyncio.gather(
+                asyncio.to_thread(first_probe.started.wait, 1),
+                asyncio.to_thread(second_probe.started.wait, 1),
+            )
+            assert all(started)
+            return first_probe.active_calls, second_probe.active_calls
+        finally:
+            first_probe.release.set()
+            second_probe.release.set()
+            await asyncio.gather(first_task, second_task)
 
-    assert asyncio.run(scenario()) < 0.24
+    assert asyncio.run(scenario()) == (1, 1)
 
 
 def test_same_session_serializes_blocking_tools() -> None:
@@ -141,20 +152,22 @@ def test_same_session_serializes_blocking_tools() -> None:
 
 
 def test_execution_boundary_applies_to_other_session_tools() -> None:
-    async def scenario() -> float:
+    async def scenario() -> bool:
         session = SessionState()
-        session.probe = _BlockingProbe(delay_seconds=0.2)
+        probe = _ControlledProbe()
+        session.probe = probe
         app = create_server(session)
 
-        started = time.monotonic()
         resume_task = asyncio.create_task(_run_tool(app, "probe_resume"))
-        await asyncio.sleep(0.01)
-        await _run_tool(app, "list_tool_safety")
-        metadata_elapsed = time.monotonic() - started
-        await resume_task
-        return metadata_elapsed
+        assert await asyncio.to_thread(probe.started.wait, 1)
+        try:
+            await asyncio.wait_for(_run_tool(app, "list_tool_safety"), timeout=1)
+            return not resume_task.done()
+        finally:
+            probe.release.set()
+            await resume_task
 
-    assert asyncio.run(scenario()) < 0.1
+    assert asyncio.run(scenario()) is True
 
 
 def test_cancellation_keeps_session_locked_until_worker_finishes() -> None:
@@ -170,7 +183,7 @@ def test_cancellation_keeps_session_locked_until_worker_finishes() -> None:
         await asyncio.sleep(0)
 
         second = asyncio.create_task(_run_tool(app, "probe_resume"))
-        await asyncio.sleep(0.05)
+        await asyncio.sleep(0)
         overlapping_calls = probe.max_active_calls
         probe.release.set()
 

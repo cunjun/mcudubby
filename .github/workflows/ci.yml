@@ -8,11 +8,12 @@ on:
 
 jobs:
   test:
-    name: Python ${{ matrix.python-version }}
-    runs-on: ubuntu-latest
+    name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest]
         python-version: ["3.10", "3.11", "3.12"]
 
     steps:
@@ -31,7 +32,35 @@ jobs:
           python -m pip install -e ".[dev]"
 
       - name: Lint
-        run: ruff check src tests
+        run: ruff check src tests scripts skills/mcubug/scripts
+
+      - name: Check skill references
+        run: python skills/mcubug/scripts/sync_references.py --check
 
       - name: Test
         run: pytest
+
+  rust:
+    name: Rust sidecar
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rust/probe-sidecar
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      - name: Lint
+        run: cargo clippy --locked --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test --locked

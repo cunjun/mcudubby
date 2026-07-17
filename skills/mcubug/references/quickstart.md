@@ -108,6 +108,8 @@ board_smoke_test()
 ```
 
 Expected evidence is a connected probe, readable CPU state, and readable vector-table words.
+The default flow connects to and halts the target and may leave it halted. Use
+`board_smoke_test(disconnect_after=True)` when the probe should disconnect afterward.
 If the probe is found but SWD returns `No ACK`, reduce the frequency, try `under-reset`, and
 check target power, wiring, reset, and whether another debugger owns the probe.
 

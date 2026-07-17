@@ -136,3 +136,6 @@ Runtime configuration and target preflight:
 - `stop_jlink_gdb_server`
 - `get_jlink_gdb_server_status`
 - `disconnect_all`
+
+`start_gdb_server` binds to localhost by default. Remote binding requires both
+`allow_remote=True` and `confirm_remote=True` because the GDB server has no authentication.

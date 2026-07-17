@@ -32,11 +32,12 @@ class KeilBuildRuntime:
             "-o",
             str(log_path),
         ]
+        log_path.unlink(missing_ok=True)
         completed = subprocess.run(command, capture_output=True, text=True, timeout=timeout_seconds)
         log_text = self._read_text_if_exists(log_path)
         firmware = self._collect_firmware_info(elf.path)
 
-        build_ok = self._build_succeeded(log_text)
+        build_ok = self._build_succeeded(completed.returncode, log_text)
         return {
             "status": "ok" if build_ok else "error",
             "summary": self._summarize_build(completed.returncode, log_text),
@@ -69,11 +70,12 @@ class KeilBuildRuntime:
             "-o",
             str(log_path),
         ]
+        log_path.unlink(missing_ok=True)
         completed = subprocess.run(command, capture_output=True, text=True, timeout=timeout_seconds)
         log_text = self._read_text_if_exists(log_path)
         firmware = self._collect_firmware_info(elf.path)
 
-        flash_ok = self._flash_succeeded(log_text)
+        flash_ok = self._flash_succeeded(completed.returncode, log_text)
         return {
             "status": "ok" if flash_ok else "error",
             "summary": self._summarize_flash(completed.returncode, log_text),
@@ -124,16 +126,16 @@ class KeilBuildRuntime:
         return path.read_text(encoding="utf-8", errors="replace")
 
     @staticmethod
-    def _build_succeeded(log_text: str) -> bool:
-        return "0 Error(s)" in log_text
+    def _build_succeeded(returncode: int, log_text: str) -> bool:
+        return returncode == 0 and "0 Error(s)" in log_text
 
     @staticmethod
-    def _flash_succeeded(log_text: str) -> bool:
-        return "Verify OK" in log_text and "Application running" in log_text
+    def _flash_succeeded(returncode: int, log_text: str) -> bool:
+        return returncode == 0 and "Verify OK" in log_text and "Application running" in log_text
 
     @staticmethod
     def _summarize_build(returncode: int, log_text: str) -> str:
-        if "0 Error(s)" in log_text:
+        if KeilBuildRuntime._build_succeeded(returncode, log_text):
             return "Keil batch build completed successfully."
         if not log_text:
             return f"Keil batch build finished with return code {returncode}, but no build log was captured."
@@ -141,7 +143,7 @@ class KeilBuildRuntime:
 
     @staticmethod
     def _summarize_flash(returncode: int, log_text: str) -> str:
-        if returncode == 0 and "Verify OK" in log_text:
+        if KeilBuildRuntime._flash_succeeded(returncode, log_text):
             return "Keil batch flash download completed successfully."
         if not log_text:
             return f"Keil batch flash finished with return code {returncode}, but no flash log was captured."

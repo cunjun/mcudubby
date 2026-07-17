@@ -86,6 +86,43 @@ def test_start_gdb_server_requires_target() -> None:
     assert result["status"] == "error"
 
 
+def test_start_gdb_server_requires_explicit_confirmation_for_remote_binding() -> None:
+    calls: list[dict] = []
+    session = SimpleNamespace(
+        config=SimpleNamespace(
+            probe=SimpleNamespace(target="stm32l496vetx", unique_id=None),
+            elf=SimpleNamespace(path=None),
+        ),
+        gdb_server=SimpleNamespace(
+            start=lambda **kwargs: calls.append(kwargs) or {"status": "ok"},
+        ),
+    )
+
+    result = start_gdb_server(session, allow_remote=True)
+
+    assert result["status"] == "error"
+    assert result["safety"]["requires_confirmation"] is True
+    assert calls == []
+
+
+def test_start_gdb_server_allows_confirmed_remote_binding() -> None:
+    calls: list[dict] = []
+    session = SimpleNamespace(
+        config=SimpleNamespace(
+            probe=SimpleNamespace(target="stm32l496vetx", unique_id=None),
+            elf=SimpleNamespace(path=None),
+        ),
+        gdb_server=SimpleNamespace(
+            start=lambda **kwargs: calls.append(kwargs) or {"status": "ok"},
+        ),
+    )
+
+    result = start_gdb_server(session, allow_remote=True, confirm_remote=True)
+
+    assert result["status"] == "ok"
+    assert calls[0]["allow_remote"] is True
+
+
 def test_status_and_stop_wrap_runtime() -> None:
     session = SimpleNamespace(
         gdb_server=SimpleNamespace(

@@ -81,7 +81,7 @@ configure_keil_project(
 )
 ```
 
-## 4. Run a read-only smoke test
+## 4. Run a smoke test
 
 Before flashing or making deeper assumptions, run:
 
@@ -90,8 +90,9 @@ board_smoke_test(disconnect_after=True)
 ```
 
 The smoke test lists probes, loads the configured ELF/AXF if available, connects, optionally
-halts the target, reads stopped context, and reads a few vector-table words. It is meant as a
-first sanity check, not a replacement for feature validation.
+halts the target, reads stopped context, and reads a few vector-table words. Connecting and
+halting changes the target execution state; `disconnect_after=True` closes the probe afterward.
+It is meant as a first sanity check, not a replacement for feature validation.
 
 ## 5. Continue into debugging
 

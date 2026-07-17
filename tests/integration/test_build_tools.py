@@ -1,3 +1,4 @@
+import subprocess
 from pathlib import Path
 
 from mcudubby.config import BuildConfig, ElfConfig
@@ -117,3 +118,99 @@ def test_keil_build_runtime_creates_configured_log_parent(tmp_path: Path) -> Non
 
     assert log_path == configured_log
     assert configured_log.parent.exists()
+
+
+def test_keil_build_rejects_stale_success_log_when_command_fails(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    from mcudubby.build_runtime import KeilBuildRuntime
+
+    build, elf = _keil_runtime_config(tmp_path, "build.log")
+    log_path = Path(build.build_log_path or "")
+    log_path.write_text("0 Error(s)", encoding="utf-8")
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(args[0], 1, "", "failed"),
+    )
+
+    result = KeilBuildRuntime().build(build, elf)
+
+    assert result["status"] == "error"
+    assert not log_path.exists()
+
+
+def test_keil_flash_rejects_stale_success_log_when_command_fails(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    from mcudubby.build_runtime import KeilBuildRuntime
+
+    build, elf = _keil_runtime_config(tmp_path, "flash.log")
+    log_path = Path(build.flash_log_path or "")
+    log_path.write_text("Verify OK\nApplication running", encoding="utf-8")
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(args[0], 1, "", "failed"),
+    )
+
+    result = KeilBuildRuntime().flash(build, elf)
+
+    assert result["status"] == "error"
+    assert not log_path.exists()
+
+
+def test_keil_build_accepts_success_markers_from_fresh_log(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    from mcudubby.build_runtime import KeilBuildRuntime
+
+    build, elf = _keil_runtime_config(tmp_path, "build.log")
+
+    def run(command, **kwargs):
+        Path(command[-1]).write_text("0 Error(s)", encoding="utf-8")
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(subprocess, "run", run)
+
+    result = KeilBuildRuntime().build(build, elf)
+
+    assert result["status"] == "ok"
+
+
+def test_keil_flash_accepts_success_markers_from_fresh_log(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    from mcudubby.build_runtime import KeilBuildRuntime
+
+    build, elf = _keil_runtime_config(tmp_path, "flash.log")
+
+    def run(command, **kwargs):
+        Path(command[-1]).write_text("Verify OK\nApplication running", encoding="utf-8")
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(subprocess, "run", run)
+
+    result = KeilBuildRuntime().flash(build, elf)
+
+    assert result["status"] == "ok"
+
+
+def _keil_runtime_config(tmp_path: Path, log_name: str) -> tuple[BuildConfig, ElfConfig]:
+    uv4_path = tmp_path / "UV4.exe"
+    uv4_path.write_text("", encoding="utf-8")
+    project_path = tmp_path / "firmware.uvprojx"
+    project_path.write_text("", encoding="utf-8")
+    log_path = tmp_path / log_name
+    build = BuildConfig(
+        uv4_path=str(uv4_path),
+        project_path=str(project_path),
+        target_name="test",
+        build_log_path=str(log_path),
+        flash_log_path=str(log_path),
+    )
+    return build, ElfConfig()

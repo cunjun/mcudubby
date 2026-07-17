@@ -11,11 +11,26 @@ def start_gdb_server(
     telnet_port: int = 4444,
     probe_server_port: int = 5555,
     allow_remote: bool = False,
+    confirm_remote: bool = False,
     persist: bool = False,
     target: str | None = None,
     unique_id: str | None = None,
     elf_path: str | None = None,
 ) -> dict:
+    if allow_remote and not confirm_remote:
+        return {
+            "status": "error",
+            "summary": (
+                "Remote GDB binding exposes the debug server beyond localhost and requires "
+                "explicit confirmation. Retry with confirm_remote=true."
+            ),
+            "safety": {
+                "level": "host-process",
+                "summary": "Exposes an unauthenticated debug server to remote network clients.",
+                "requires_confirmation": True,
+            },
+        }
+
     resolved_target = target or session.config.probe.target
     resolved_unique_id = unique_id if unique_id is not None else session.config.probe.unique_id
     resolved_elf_path = elf_path if elf_path is not None else session.config.elf.path

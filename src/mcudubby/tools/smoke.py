@@ -120,9 +120,9 @@ def first_contact(
         evidence=evidence,
         next_tools=next_tools,
         safety=safety_info(
-            "read-only",
+            "execution-changing",
             "Runs probe discovery, target preflight, configuration, connect/halt reads, and optional ELF load.",
-            "Does not erase flash, program flash, write memory, or write peripheral registers.",
+            "May connect to and halt the target; does not erase flash, program flash, or write memory.",
         ),
         payload={
             "target_info": target_info,
@@ -142,7 +142,7 @@ def board_smoke_test(
     vector_words: int = 4,
     disconnect_after: bool = False,
 ) -> dict:
-    """Run a generic read-only hardware sanity check against the configured board."""
+    """Run a generic hardware sanity check against the configured board."""
     steps: list[dict[str, Any]] = []
     errors: dict[str, str] = {}
 
@@ -202,9 +202,9 @@ def board_smoke_test(
         evidence=[{"kind": "smoke_step", "step": step["step"], "result": step} for step in steps],
         next_tools=next_tools,
         safety=safety_info(
-            "read-only",
+            "execution-changing",
             "Connects, halts, reads CPU state, optionally reads vector table, and can disconnect.",
-            "Does not write memory, registers, or flash.",
+            "May leave the target connected and halted unless disconnect_after is true; does not write memory or flash.",
         ),
         payload={
             "steps": steps,

@@ -90,7 +90,7 @@ def test_first_contact_configures_target_and_returns_next_steps() -> None:
     )
 
     assert result["status"] == "ok"
-    assert result["safety"]["level"] == "read-only"
+    assert result["safety"]["level"] == "execution-changing"
     assert result["target_info"]["matched_target"] == "stm32l496vetx"
     assert session.config.probe.target == "stm32l496vetx"
     assert session.config.elf.path == r"d:\demo\app.axf"

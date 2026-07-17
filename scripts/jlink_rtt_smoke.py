@@ -12,9 +12,9 @@ SRC_ROOT = REPO_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from mcudubby.session import create_default_session
-from mcudubby.tools.configuration import configure_probe
-from mcudubby.tools.probe import connect_probe, disconnect_probe, read_rtt_log
+from mcudubby.session import create_default_session  # noqa: E402
+from mcudubby.tools.configuration import configure_probe  # noqa: E402
+from mcudubby.tools.probe import connect_probe, disconnect_probe, read_rtt_log  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:

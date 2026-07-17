@@ -61,7 +61,8 @@ class _FakeSession:
 
 def test_tool_safety_marks_read_only_and_destructive_tools() -> None:
     assert get_tool_safety("doctor")["level"] == "read-only"
-    assert get_tool_safety("first_contact")["level"] == "read-only"
+    assert get_tool_safety("first_contact")["level"] == "execution-changing"
+    assert get_tool_safety("board_smoke_test")["level"] == "execution-changing"
     assert get_tool_safety("probe_reset")["level"] == "execution-changing"
     assert get_tool_safety("probe_write_memory")["level"] == "state-changing"
     assert get_tool_safety("probe_read_mpu_regions")["level"] == "state-changing"

@@ -35,19 +35,30 @@ def main() -> int:
         default=str(Path(__file__).resolve().parents[1]),
         help="Path to the mcubug skill directory.",
     )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Check for missing or stale references without modifying files.",
+    )
     args = parser.parse_args()
 
     repo = Path(args.repo).resolve()
     skill = Path(args.skill).resolve()
     references = skill / "references"
-    references.mkdir(exist_ok=True)
+    if not args.check:
+        references.mkdir(parents=True, exist_ok=True)
 
     missing: list[str] = []
+    stale: list[str] = []
     for source_name, dest_name in REFERENCE_MAP.items():
         source = repo / source_name
         dest = references / dest_name
         if not source.exists():
             missing.append(str(source))
+            continue
+        if args.check:
+            if not dest.exists() or source.read_bytes() != dest.read_bytes():
+                stale.append(f"{source_name} -> references/{dest_name}")
             continue
         shutil.copyfile(source, dest)
         print(f"synced {source_name} -> references/{dest_name}")
@@ -56,9 +67,12 @@ def main() -> int:
         print("missing source files:")
         for item in missing:
             print(f"- {item}")
-        return 1
+    if stale:
+        print("stale or missing references:")
+        for item in stale:
+            print(f"- {item}")
 
-    return 0
+    return 1 if missing or stale else 0
 
 
 if __name__ == "__main__":

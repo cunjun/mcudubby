@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 - 2026-07-17
 
 ### Changed
 - Moved blocking MCP tool execution to worker threads so probe and backend calls do not block the
@@ -10,6 +10,11 @@
 - Kept session locks held until cancelled worker calls finish, preventing backend replacement or a
   second probe command from overlapping an in-flight operation.
 - Preserved all 104 MCP tool names, parameters, and schemas across the execution-boundary refactor.
+
+## 0.4.0 - 2026-07-11
+
+### Released
+- Published the initial `mcudubby` v0.4.0 release.
 
 ## 0.2.0 - 2026-04-01
 

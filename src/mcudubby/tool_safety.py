@@ -37,8 +37,8 @@ SAFETY_LEVELS: dict[str, dict[str, Any]] = {
 
 TOOL_SAFETY: dict[str, dict[str, Any]] = {
     "doctor": {"level": "read-only"},
-    "first_contact": {"level": "read-only"},
-    "board_smoke_test": {"level": "read-only"},
+    "first_contact": {"level": "execution-changing"},
+    "board_smoke_test": {"level": "execution-changing"},
     "get_runtime_config": {"level": "read-only"},
     "list_connected_probes": {"level": "read-only"},
     "list_supported_targets": {"level": "read-only"},
