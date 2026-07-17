@@ -9,6 +9,8 @@
 - Keil 构建和烧录同时校验进程返回码与本次生成的日志，避免旧日志误报成功。
 - smoke/first-contact 工具按实际行为标记为会改变目标执行状态。
 - pyOCD GDB server 远程绑定新增显式确认，默认继续仅监听本机。
+- MCP 工具的安全等级、确认要求和执行模式统一集中管理，DWT/SWO 启用及会改变目标状态的诊断命令均受一致策略约束。
+- 探针重新配置改为事务式更新，无效连接参数不会替换当前后端或留下半更新配置。
 - CI 新增 Windows、Rust sidecar、脚本 lint 和 skill 参考文档漂移检查。
 - GitHub Release 自动构建并附加 wheel 与源码包。
 

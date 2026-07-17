@@ -10,6 +10,10 @@
 - Kept session locks held until cancelled worker calls finish, preventing backend replacement or a
   second probe command from overlapping an in-flight operation.
 - Preserved all 104 MCP tool names, parameters, and schemas across the execution-boundary refactor.
+- Centralized MCP tool safety and execution policies, including explicit confirmation for DWT/SWO
+  activation and diagnosis commands that can change target execution state.
+- Made probe reconfiguration transactional so invalid connection attempts cannot replace the
+  active backend or partially mutate the current configuration.
 
 ## 0.4.0 - 2026-07-11
 
