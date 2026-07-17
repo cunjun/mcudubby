@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- Moved blocking MCP tool execution to worker threads so probe and backend calls do not block the
+  MCP event loop.
+- Serialized operations that share a debug session while keeping independent sessions and
+  stateless metadata queries concurrent.
+- Kept session locks held until cancelled worker calls finish, preventing backend replacement or a
+  second probe command from overlapping an in-flight operation.
+- Preserved all 104 MCP tool names, parameters, and schemas across the execution-boundary refactor.
+
 ## 0.2.0 - 2026-04-01
 
 ### Added

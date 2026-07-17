@@ -14,6 +14,8 @@ Board bring-up helpers:
 
 Runtime configuration and target preflight:
 
+- `doctor`
+- `first_contact`
 - `get_runtime_config`
 - `list_demo_profiles`
 - `load_demo_profile`
@@ -25,6 +27,8 @@ Runtime configuration and target preflight:
 - `match_chip_name`
 - `get_target_info`
 - `list_supported_targets`
+- `list_tool_safety`
+- `list_validation_records`
 
 ## Probe Control And Stepping
 

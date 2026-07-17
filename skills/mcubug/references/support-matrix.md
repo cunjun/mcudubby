@@ -2,6 +2,10 @@
 
 This document summarizes what is implemented, what is hardware-validated, and where the current limits remain.
 
+Machine-readable validation records live under `src/mcudubby/validation/` and are exposed through
+`list_validation_records()`. Use those JSON files as the canonical evidence records, and keep this
+page as the human-readable summary.
+
 ## Backend status
 
 | Capability | pyOCD | J-Link | Notes |
@@ -17,9 +21,18 @@ This document summarizes what is implemented, what is hardware-validated, and wh
 | DWT cycle counter | No current public path | Yes | Hardware-validated on STM32F103C8 + J-Link |
 | SWO log read | No current public path | Partial | Backend path works; text capture depends on board wiring |
 
+## Experimental probe-rs sidecar
+
+The optional Rust sidecar currently provides an unvalidated `probe-rs` backend for probe discovery,
+connection lifecycle, core control, core registers, memory access, and hardware breakpoints. It is
+an integration preview rather than a hardware-validated backend. Flash, RTT, SWO, and packaged
+release binaries are not yet part of this path.
+
 ## Hardware-validated targets
 
 ### ATK_PICTURE / STM32L496VETx / ST-Link
+
+Record: `src/mcudubby/validation/stm32l496vetx-pyocd-stlink.json`
 
 Validated:
 
@@ -43,6 +56,8 @@ Validated FreeRTOS synchronization patterns:
 - ISR-to-task notify
 
 ### Custom board / STM32F103C8 / J-Link
+
+Record: `src/mcudubby/validation/stm32f103c8-jlink.json`
 
 Validated:
 

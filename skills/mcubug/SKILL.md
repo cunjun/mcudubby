@@ -44,6 +44,19 @@ When the user reports a board problem and has not specified commands:
 9. Inspect `read_rtt_log()`, `log_tail(...)`, `list_rtos_tasks()`, and `rtos_task_context(...)`
    when logs or RTOS state matter.
 
+## Concurrency and Session Ordering
+
+Treat one `mcudubby` server session as one ordered hardware-debug channel. The server serializes
+tools that share probe, backend, ELF/SVD, log, build, or runtime configuration state. Independent
+server sessions may execute in parallel, and stateless metadata queries may overlap session work.
+
+- Await each stateful hardware command before interpreting or reporting its result.
+- Do not use parallel calls to reorder reset, halt, resume, memory access, backend configuration,
+  build, flash, or disconnect steps; the server will serialize them in arrival order.
+- Cancelling a request does not interrupt a synchronous probe SDK call already in progress. Wait
+  for it to finish before assuming the probe or backend is available for another operation.
+- Use separate server sessions for independent boards that must be operated in parallel.
+
 ## Symptom Routing
 
 | Symptom | Start With |

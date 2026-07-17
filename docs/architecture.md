@@ -25,6 +25,27 @@ Do not add tool implementations or long registration blocks there.
 Registration modules should be thin wrappers. They translate MCP parameters into calls to
 domain tools and should not contain hardware logic.
 
+## MCP Execution Boundary
+
+`src/mcudubby/mcp_execution.py` wraps every registered MCP tool before FastMCP exposes it.
+Tool callbacks run in worker threads so blocking probe SDK, sidecar, filesystem, and build calls
+do not block the MCP event loop.
+
+Tools that access a shared `SessionState` are serialized by that session's execution lock. This
+keeps probe operations, backend replacement, ELF/SVD state, logs, and runtime configuration from
+overlapping within one debug session. Separate sessions have separate locks and may execute in
+parallel. Stateless metadata queries such as target matching and tool-safety discovery bypass the
+session lock, but still run outside the event loop.
+
+Cancellation does not stop a synchronous SDK call that is already running in a worker thread.
+The execution boundary therefore holds the session lock until that worker finishes, then propagates
+the cancellation. Keep this invariant when adding new execution paths; releasing the lock early can
+allow a second command to mutate or disconnect a backend that is still in use.
+
+The execution wrapper preserves each registered function's name, signature, documentation, and MCP
+schema. New tools should continue to use the normal `@mcp.tool()` registration pattern rather than
+calling the execution boundary directly.
+
 ## Domain Tools
 
 `src/mcudubby/tools/` contains behavior-oriented modules that can be tested without MCP.
