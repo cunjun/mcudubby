@@ -43,13 +43,13 @@ def register_probe_watch_tools(mcp, session: SessionState) -> None:
         return probe_tools.read_fpu_registers(session)
 
     @mcp.tool()
-    async def read_cycle_counter() -> dict:
+    async def read_cycle_counter(confirm: bool = False) -> dict:
         """Read the DWT cycle counter when supported by the active probe backend.
 
         Useful for lightweight execution progress and timing checks.
         Requires probe connected.
         """
-        return probe_tools.read_cycle_counter(session)
+        return probe_tools.read_cycle_counter(session, confirm=confirm)
 
     @mcp.tool()
     async def read_swo_log(
@@ -57,6 +57,7 @@ def register_probe_watch_tools(mcp, session: SessionState) -> None:
         swo_speed_hz: int,
         max_bytes: int = 1024,
         port_mask: int = 0x01,
+        confirm: bool = False,
     ) -> dict:
         """Read bytes from the J-Link SWO host buffer when supported by the active probe backend.
 
@@ -72,6 +73,7 @@ def register_probe_watch_tools(mcp, session: SessionState) -> None:
             swo_speed_hz=swo_speed_hz,
             max_bytes=max_bytes,
             port_mask=port_mask,
+            confirm=confirm,
         )
 
     @mcp.tool()

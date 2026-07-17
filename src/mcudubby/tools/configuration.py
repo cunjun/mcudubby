@@ -64,9 +64,38 @@ def configure_probe(
             "summary": f"Unknown probe backend: {requested_backend}",
             "supported_backends": ["jlink", "probe-rs", "pyocd"],
         }
-    next_jlink_dll_path = (
-        jlink_dll_path if jlink_dll_path is not None else session.config.probe.jlink_dll_path
-    )
+
+    next_config = session.config.probe.model_copy(deep=True)
+    next_config.backend = next_backend
+    if unique_id is not None:
+        next_config.unique_id = unique_id
+    if jlink_dll_path is not None:
+        next_config.jlink_dll_path = jlink_dll_path
+    if probe_rs_sidecar_path is not None:
+        next_config.probe_rs_sidecar_path = probe_rs_sidecar_path
+    if pack_paths is not None:
+        next_config.pack_paths = list(pack_paths)
+    if pack_path is not None and pack_path not in next_config.pack_paths:
+        next_config.pack_paths.append(pack_path)
+    if connect_attempts is not None:
+        try:
+            next_config.connect_attempts = [
+                ConnectAttempt.model_validate(attempt) for attempt in connect_attempts
+            ]
+        except ValueError as exc:
+            return {
+                "status": "error",
+                "summary": f"Invalid probe connection attempt: {exc}",
+            }
+
+    matched_target = None
+    match_result = None
+    patch_result = None
+    if target is not None:
+        match_result = _match_chip_name(target, backend=next_backend)
+        matched_target = match_result["matched_target"]
+        next_config.target = matched_target
+        patch_result = _resolve_device_patch(target, backend=next_backend)
 
     recreate_probe = False
     if backend is not None and next_backend != session.config.probe.backend:
@@ -76,70 +105,68 @@ def configure_probe(
     if next_backend == "probe-rs" and probe_rs_sidecar_path is not None:
         recreate_probe = True
 
+    candidate_probe = session.probe
     if recreate_probe:
         try:
-            replacement_probe = create_probe_backend(
+            candidate_probe = create_probe_backend(
                 next_backend,
-                jlink_dll_path=next_jlink_dll_path,
-                probe_rs_sidecar_path=probe_rs_sidecar_path,
+                jlink_dll_path=next_config.jlink_dll_path,
+                probe_rs_sidecar_path=next_config.probe_rs_sidecar_path,
             )
         except ValueError as exc:
             return {
                 "status": "error",
                 "summary": str(exc),
             }
+
+    try:
+        if probe_supports(candidate_probe, ProbeCapability.PACK_PATHS):
+            candidate_probe.set_pack_paths(next_config.pack_paths)
+        connect_hints = patch_result["connect_hints"] if patch_result is not None else None
+        if next_config.connect_attempts:
+            connect_hints = {
+                "attempts": connect_attempts_to_dicts(next_config.connect_attempts)
+            }
+        if connect_hints is not None and probe_supports(
+            candidate_probe, ProbeCapability.CONNECT_HINTS
+        ):
+            candidate_probe.set_connect_hints(connect_hints)
+    except Exception as exc:
+        if recreate_probe:
+            try:
+                candidate_probe.disconnect()
+            except Exception:
+                pass
+        return {
+            "status": "error",
+            "summary": f"Could not prepare the probe backend: {exc}",
+        }
+
+    if recreate_probe:
         try:
             disconnect_result = session.probe.disconnect()
             if disconnect_result.get("status") == "error":
                 raise RuntimeError(disconnect_result.get("summary", "disconnect failed"))
         except Exception as exc:
             try:
-                replacement_probe.disconnect()
+                candidate_probe.disconnect()
             except Exception:
                 pass
             return {
                 "status": "error",
                 "summary": f"Could not disconnect the current probe backend: {exc}",
             }
-        session.probe = replacement_probe
-        session.config.probe.backend = next_backend
-    matched_target = None
-    if target is not None:
-        match_result = _match_chip_name(target, backend=next_backend)
-        matched_target = match_result["matched_target"]
-        session.config.probe.target = matched_target
-        patch_result = _resolve_device_patch(target, backend=next_backend)
-        if probe_supports(session.probe, ProbeCapability.CONNECT_HINTS):
-            session.probe.set_connect_hints(patch_result["connect_hints"])
-    if unique_id is not None:
-        session.config.probe.unique_id = unique_id
-    if jlink_dll_path is not None:
-        session.config.probe.jlink_dll_path = jlink_dll_path
-    if probe_rs_sidecar_path is not None:
-        session.config.probe.probe_rs_sidecar_path = probe_rs_sidecar_path
-    if pack_paths is not None:
-        session.config.probe.pack_paths = list(pack_paths)
-    if pack_path is not None:
-        if pack_path not in session.config.probe.pack_paths:
-            session.config.probe.pack_paths.append(pack_path)
-    if connect_attempts is not None:
-        session.config.probe.connect_attempts = [
-            ConnectAttempt.model_validate(attempt) for attempt in connect_attempts
-        ]
-    if probe_supports(session.probe, ProbeCapability.PACK_PATHS):
-        session.probe.set_pack_paths(session.config.probe.pack_paths)
-    if session.config.probe.connect_attempts and probe_supports(
-        session.probe, ProbeCapability.CONNECT_HINTS
-    ):
-        session.probe.set_connect_hints(
-            {"attempts": connect_attempts_to_dicts(session.config.probe.connect_attempts)}
-        )
+        session.probe = candidate_probe
+
+    session.config.probe = next_config
     result = {
         "status": "ok",
         "summary": "Updated probe configuration.",
         "probe": session.config.probe.model_dump(),
     }
     if target is not None:
+        assert match_result is not None
+        assert patch_result is not None
         result["target_match"] = match_result
         result["target_patch"] = patch_result
         if matched_target != target:

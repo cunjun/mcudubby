@@ -7,19 +7,7 @@ from functools import wraps
 from typing import Any
 
 from .session import SessionState
-
-
-CONCURRENT_TOOL_NAMES = frozenset(
-    {
-        "discover_keil_projects",
-        "get_target_info",
-        "list_demo_profiles",
-        "list_supported_targets",
-        "list_tool_safety",
-        "list_validation_records",
-        "match_chip_name",
-    }
-)
+from .tool_safety import get_tool_safety, require_tool_confirmation
 
 
 def _run_callback(callback: Callable[..., Any], args: tuple[Any, ...], kwargs: dict[str, Any]) -> Any:
@@ -60,7 +48,12 @@ class SessionToolRegistrar:
         def decorate(callback: Callable[..., Any]) -> Callable[..., Any]:
             @wraps(callback)
             async def execute(*args: Any, **kwargs: Any) -> Any:
-                if callback.__name__ in CONCURRENT_TOOL_NAMES:
+                policy = get_tool_safety(callback.__name__)
+                bound = inspect.signature(callback).bind_partial(*args, **kwargs)
+                confirmed = bool(bound.arguments.get("confirm", False))
+                if blocked := require_tool_confirmation(callback.__name__, confirmed):
+                    return blocked
+                if policy["execution"] == "concurrent":
                     return await asyncio.to_thread(_run_callback, callback, args, kwargs)
                 return await _run_serialized(self._session, callback, args, kwargs)
 

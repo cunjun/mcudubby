@@ -1,6 +1,10 @@
+import asyncio
 import ast
 from pathlib import Path
 
+from mcudubby.backends.probe.base import ProbeCapability
+from mcudubby.server import create_server
+from mcudubby.session import SessionState
 from mcudubby.tool_safety import (
     TOOL_SAFETY,
     get_tool_safety,
@@ -31,6 +35,29 @@ class _RecordingProbe:
     def set_watchpoint(self, address: int, size: int = 4, watch_type: str = "write") -> dict:
         self.calls.append(f"set_watchpoint:{hex(address)}:{size}:{watch_type}")
         return {"status": "ok", "address": hex(address)}
+
+
+class _StateChangingReadProbe(_RecordingProbe):
+    capabilities = frozenset(
+        {
+            ProbeCapability.DWT_CYCLE_COUNTER,
+            ProbeCapability.SWO,
+        }
+    )
+
+    def read_cycle_counter(self) -> dict:
+        self.calls.append("read_cycle_counter")
+        return {"status": "ok", "cyccnt": 123}
+
+    def read_swo_log(
+        self,
+        cpu_speed_hz: int,
+        swo_speed_hz: int,
+        max_bytes: int = 1024,
+        port_mask: int = 0x01,
+    ) -> dict:
+        self.calls.append("read_swo_log")
+        return {"status": "ok", "text": "hello"}
 
 
 class _FakeElf:
@@ -70,6 +97,17 @@ def test_tool_safety_marks_read_only_and_destructive_tools() -> None:
     assert get_tool_safety("program_flash")["level"] == "persistent-destructive"
 
 
+def test_auto_halting_diagnostics_are_execution_changing() -> None:
+    assert get_tool_safety("diagnose")["level"] == "execution-changing"
+    assert get_tool_safety("diagnose_hardfault")["level"] == "execution-changing"
+    assert get_tool_safety("diagnose_startup_failure")["level"] == "execution-changing"
+
+
+def test_tool_policy_exposes_execution_mode_from_same_registry() -> None:
+    assert get_tool_safety("list_tool_safety")["execution"] == "concurrent"
+    assert get_tool_safety("probe_halt")["execution"] == "serialized"
+
+
 def test_every_registered_mcp_tool_has_safety_metadata() -> None:
     mcp_tools_dir = Path(__file__).parents[2] / "src" / "mcudubby" / "mcp_tools"
     registered_tools: set[str] = set()
@@ -80,6 +118,25 @@ def test_every_registered_mcp_tool_has_safety_metadata() -> None:
         )
 
     assert set(TOOL_SAFETY) == registered_tools
+
+
+def test_every_confirmation_required_mcp_tool_exposes_confirm_parameter() -> None:
+    mcp_tools_dir = Path(__file__).parents[2] / "src" / "mcudubby" / "mcp_tools"
+    tool_parameters: dict[str, set[str]] = {}
+    for path in mcp_tools_dir.rglob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.AsyncFunctionDef):
+                tool_parameters[node.name] = {argument.arg for argument in node.args.args}
+
+    missing = {
+        name
+        for name in TOOL_SAFETY
+        if get_tool_safety(name)["requires_confirmation"]
+        and "confirm" not in tool_parameters[name]
+    }
+
+    assert missing == set()
 
 
 def test_list_tool_safety_is_machine_readable() -> None:
@@ -156,3 +213,21 @@ def test_mpu_region_read_requires_confirmation_because_it_writes_selector() -> N
     assert result["status"] == "error"
     assert result["safety"]["level"] == "state-changing"
     assert session.probe.calls == []
+
+
+def test_state_changing_reads_require_confirmation_through_mcp() -> None:
+    session = SessionState()
+    probe = _StateChangingReadProbe()
+    session.probe = probe
+    app = create_server(session)
+
+    cycle_result = asyncio.run(app._tool_manager.get_tool("read_cycle_counter").run({}))
+    swo_result = asyncio.run(
+        app._tool_manager.get_tool("read_swo_log").run(
+            {"cpu_speed_hz": 80_000_000, "swo_speed_hz": 2_000_000}
+        )
+    )
+
+    assert cycle_result["status"] == "error"
+    assert swo_result["status"] == "error"
+    assert probe.calls == []

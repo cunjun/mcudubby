@@ -51,12 +51,14 @@ def read_fpu_registers(session: SessionState) -> dict:
     }
 
 
-def read_cycle_counter(session: SessionState) -> dict:
+def read_cycle_counter(session: SessionState, confirm: bool = False) -> dict:
     if not probe_supports(session.probe, ProbeCapability.DWT_CYCLE_COUNTER):
         return {
             "status": "error",
             "summary": "Active probe backend does not support DWT cycle counter reads.",
         }
+    if blocked := require_tool_confirmation("read_cycle_counter", confirm):
+        return blocked
     try:
         return session.probe.read_cycle_counter()
     except NotImplementedError:
@@ -77,12 +79,15 @@ def read_swo_log(
     swo_speed_hz: int,
     max_bytes: int = 1024,
     port_mask: int = 0x01,
+    confirm: bool = False,
 ) -> dict:
     if not probe_supports(session.probe, ProbeCapability.SWO):
         return {
             "status": "error",
             "summary": "Active probe backend does not support SWO log reads.",
         }
+    if blocked := require_tool_confirmation("read_swo_log", confirm):
+        return blocked
     try:
         return session.probe.read_swo_log(
             cpu_speed_hz=cpu_speed_hz,

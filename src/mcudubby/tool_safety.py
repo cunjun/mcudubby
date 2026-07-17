@@ -3,6 +3,19 @@ from __future__ import annotations
 from typing import Any
 
 
+CONCURRENT_TOOLS = frozenset(
+    {
+        "discover_keil_projects",
+        "get_target_info",
+        "list_demo_profiles",
+        "list_supported_targets",
+        "list_tool_safety",
+        "list_validation_records",
+        "match_chip_name",
+    }
+)
+
+
 SAFETY_LEVELS: dict[str, dict[str, Any]] = {
     "read-only": {
         "summary": "Reads configuration, debug state, symbols, logs, or metadata.",
@@ -35,7 +48,7 @@ SAFETY_LEVELS: dict[str, dict[str, Any]] = {
 }
 
 
-TOOL_SAFETY: dict[str, dict[str, Any]] = {
+TOOL_POLICIES: dict[str, dict[str, Any]] = {
     "doctor": {"level": "read-only"},
     "first_contact": {"level": "execution-changing"},
     "board_smoke_test": {"level": "execution-changing"},
@@ -77,9 +90,9 @@ TOOL_SAFETY: dict[str, dict[str, Any]] = {
     "read_rtt_log": {"level": "read-only"},
     "log_tail": {"level": "read-only"},
     "svd_read_peripheral": {"level": "read-only"},
-    "diagnose": {"level": "read-only"},
-    "diagnose_hardfault": {"level": "read-only"},
-    "diagnose_startup_failure": {"level": "read-only"},
+    "diagnose": {"level": "execution-changing"},
+    "diagnose_hardfault": {"level": "execution-changing"},
+    "diagnose_startup_failure": {"level": "execution-changing"},
     "diagnose_peripheral_stuck": {"level": "read-only"},
     "diagnose_memory_corruption": {"level": "read-only"},
     "diagnose_interrupt_issue": {"level": "read-only"},
@@ -142,9 +155,17 @@ TOOL_SAFETY: dict[str, dict[str, Any]] = {
     "probe_disconnect": {"level": "connection-changing"},
 }
 
+for _tool_name, _policy in TOOL_POLICIES.items():
+    _policy["execution"] = "concurrent" if _tool_name in CONCURRENT_TOOLS else "serialized"
+
+# Backward-compatible name for callers that only consume safety metadata.
+TOOL_SAFETY = TOOL_POLICIES
+
 
 def get_tool_safety(tool_name: str) -> dict[str, Any]:
-    entry = dict(TOOL_SAFETY.get(tool_name, {"level": "unknown"}))
+    entry = dict(
+        TOOL_POLICIES.get(tool_name, {"level": "unknown", "execution": "serialized"})
+    )
     level_info = SAFETY_LEVELS.get(
         entry["level"],
         {"summary": "No safety metadata is registered.", "requires_confirmation": True},
@@ -172,5 +193,5 @@ def list_tool_safety() -> dict[str, Any]:
         "status": "ok",
         "summary": f"Listed safety metadata for {len(TOOL_SAFETY)} tool(s).",
         "safety_levels": SAFETY_LEVELS,
-        "tools": {name: get_tool_safety(name) for name in sorted(TOOL_SAFETY)},
+        "tools": {name: get_tool_safety(name) for name in sorted(TOOL_POLICIES)},
     }

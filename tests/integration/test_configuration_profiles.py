@@ -80,6 +80,44 @@ def test_configure_probe_sets_custom_connect_attempts() -> None:
     assert [attempt.model_dump() for attempt in session.config.probe.connect_attempts] == attempts
 
 
+def test_configure_probe_validates_before_replacing_or_disconnecting_backend(monkeypatch) -> None:
+    class _Probe:
+        def __init__(self) -> None:
+            self.disconnect_calls = 0
+
+        def disconnect(self) -> dict:
+            self.disconnect_calls += 1
+            return {"status": "ok"}
+
+    session = SessionState()
+    original_probe = _Probe()
+    session.probe = original_probe
+    original_config = session.config.model_copy(deep=True)
+    replacement_created = False
+
+    def create_replacement(*args, **kwargs):
+        nonlocal replacement_created
+        replacement_created = True
+        return _Probe()
+
+    monkeypatch.setattr(
+        "mcudubby.tools.configuration.create_probe_backend",
+        create_replacement,
+    )
+
+    result = configure_probe(
+        session,
+        backend="jlink",
+        connect_attempts=[{"frequency": 100_000, "connect_mode": "invalid"}],
+    )
+
+    assert result["status"] == "error"
+    assert session.probe is original_probe
+    assert session.config == original_config
+    assert original_probe.disconnect_calls == 0
+    assert replacement_created is False
+
+
 def test_configure_log_overrides_port() -> None:
     session = SessionState()
     result = configure_log(session, uart_port="COM7", uart_baudrate=9600)
