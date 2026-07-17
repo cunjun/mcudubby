@@ -5,8 +5,7 @@
 > 人类负责接线，AI 负责调板。
 
 `mcudubby` 是一个面向 MCU 板级调试的 [MCP](https://modelcontextprotocol.io/) 服务端。
-它把调试探针、CPU 状态、内存、ELF/DWARF 符号、UART/RTT 日志、SVD 外设寄存器、RTOS 状态、flash
-操作和 GDB server 生命周期工具变成 AI 助手可以调用的工具。
+它把调试探针、CPU 状态、内存、ELF/DWARF 符号、UART/RTT 日志、SVD 外设寄存器、RTOS 状态、flash操作和 GDB server 生命周期工具变成 AI 助手可以调用的工具。
 
 当板子不启动、没有日志或进入 HardFault 时，你可以直接告诉 AI 现象，让它继续收集证据，
 而不是只靠猜测修改代码。
