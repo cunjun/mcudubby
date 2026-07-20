@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from McuBubby.backends.probe.base import ProbeCapability, probe_supports
-from McuBubby.backends.probe.jlink_backend import JLinkProbeBackend
-from McuBubby.backends.probe.pyocd_backend import PyOcdProbeBackend
-from McuBubby.tools.probe import read_cycle_counter
+from McuBuddy.backends.probe.base import ProbeCapability, probe_supports
+from McuBuddy.backends.probe.jlink_backend import JLinkProbeBackend
+from McuBuddy.backends.probe.pyocd_backend import PyOcdProbeBackend
+from McuBuddy.tools.probe import read_cycle_counter
 
 
 def test_backends_declare_required_core_capabilities() -> None:

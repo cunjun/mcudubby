@@ -7,8 +7,8 @@ import time
 import pytest
 from mcp.server.fastmcp.exceptions import ToolError
 
-from McuBubby.server import create_server
-from McuBubby.session import SessionState
+from McuBuddy.server import create_server
+from McuBuddy.session import SessionState
 
 
 class _BlockingProbe:
@@ -211,7 +211,7 @@ def test_session_lock_is_released_after_worker_error() -> None:
 def test_backend_switch_waits_for_active_session_operation(monkeypatch) -> None:
     replacement = _BlockingProbe(delay_seconds=0)
     monkeypatch.setattr(
-        "McuBubby.tools.configuration.create_probe_backend",
+        "McuBuddy.tools.configuration.create_probe_backend",
         lambda *args, **kwargs: replacement,
     )
 

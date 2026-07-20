@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from McuBubby.session import SessionState
-from McuBubby.tools.project import configure_keil_project, discover_keil_projects
+from McuBuddy.session import SessionState
+from McuBuddy.tools.project import configure_keil_project, discover_keil_projects
 
 
 def test_discover_keil_projects_reports_targets_and_outputs(tmp_path: Path) -> None:

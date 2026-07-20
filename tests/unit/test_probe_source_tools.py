@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from McuBubby.tools.probe import addr_to_source
-from McuBubby.tools.probe import source_step
+from McuBuddy.tools.probe import addr_to_source
+from McuBuddy.tools.probe import source_step
 
 
 class _FakeElf:

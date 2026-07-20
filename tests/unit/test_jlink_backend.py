@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-import McuBubby.backends.probe.jlink_backend as jlink_backend
-from McuBubby.session import SessionState, create_probe_backend
-from McuBubby.tools.configuration import configure_probe
+import McuBuddy.backends.probe.jlink_backend as jlink_backend
+from McuBuddy.session import SessionState, create_probe_backend
+from McuBuddy.tools.configuration import configure_probe
 
 
 class _FakeLibrary:

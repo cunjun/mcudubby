@@ -1,6 +1,6 @@
-from McuBubby.config import ConnectAttempt, get_builtin_profiles
-from McuBubby.session import SessionState
-from McuBubby.tools.configuration import (
+from McuBuddy.config import ConnectAttempt, get_builtin_profiles
+from McuBuddy.session import SessionState
+from McuBuddy.tools.configuration import (
     configure_build,
     configure_elf,
     configure_log,
@@ -101,7 +101,7 @@ def test_configure_probe_validates_before_replacing_or_disconnecting_backend(mon
         return _Probe()
 
     monkeypatch.setattr(
-        "McuBubby.tools.configuration.create_probe_backend",
+        "McuBuddy.tools.configuration.create_probe_backend",
         create_replacement,
     )
 

@@ -1,26 +1,26 @@
 # Windows MCP Config Example
 
-This document shows how to register `McuBubby` as an MCP server on Windows. It only covers client
+This document shows how to register `McuBuddy` as an MCP server on Windows. It only covers client
 launch configuration; use [Quickstart](quickstart.md) for the first board workflow.
 
 ## Before You Configure MCP
 
 Confirm these first:
 
-1. the `McuBubby` repository or package is installed
-2. the Python environment can import `McuBubby`
+1. the `McuBuddy` repository or package is installed
+2. the Python environment can import `McuBuddy`
 3. the board can be reached by the chosen probe outside the MCP client
 4. optional UART or RTT logging works when your workflow depends on logs
 
 ## Choose A Working Directory
 
 If you are running from a source checkout, use the repository root as `cwd`. That is the directory
-containing `pyproject.toml` and `src/McuBubby`.
+containing `pyproject.toml` and `src/McuBuddy`.
 
 Example placeholder:
 
 ```text
-E:\work_code\McuBubby
+E:\work_code\McuBuddy
 ```
 
 Replace this path with your local checkout path.
@@ -30,12 +30,12 @@ Replace this path with your local checkout path.
 Windows Python environments vary, so these are the common choices:
 
 ```text
-py -3 -m McuBubby
-python -m McuBubby
-McuBubby
+py -3 -m McuBuddy
+python -m McuBuddy
+McuBuddy
 ```
 
-Start with `py -3 -m McuBubby` if the Python launcher is installed. Use an explicit virtualenv
+Start with `py -3 -m McuBuddy` if the Python launcher is installed. Use an explicit virtualenv
 Python path when the MCP client does not inherit your shell environment.
 
 ## Minimal Config With Python Launcher
@@ -43,10 +43,10 @@ Python path when the MCP client does not inherit your shell environment.
 ```json
 {
   "mcpServers": {
-    "McuBubby": {
+    "McuBuddy": {
       "command": "py",
-      "args": ["-3", "-m", "McuBubby"],
-      "cwd": "E:\\work_code\\McuBubby"
+      "args": ["-3", "-m", "McuBuddy"],
+      "cwd": "E:\\work_code\\McuBuddy"
     }
   }
 }
@@ -60,10 +60,10 @@ environment or point directly at a virtualenv Python.
 ```json
 {
   "mcpServers": {
-    "McuBubby": {
+    "McuBuddy": {
       "command": "python",
-      "args": ["-m", "McuBubby"],
-      "cwd": "E:\\work_code\\McuBubby"
+      "args": ["-m", "McuBuddy"],
+      "cwd": "E:\\work_code\\McuBuddy"
     }
   }
 }
@@ -99,10 +99,10 @@ Then point the MCP client at that Python executable:
 ```json
 {
   "mcpServers": {
-    "McuBubby": {
-      "command": "E:\\work_code\\McuBubby\\.venv\\Scripts\\python.exe",
-      "args": ["-m", "McuBubby"],
-      "cwd": "E:\\work_code\\McuBubby"
+    "McuBuddy": {
+      "command": "E:\\work_code\\McuBuddy\\.venv\\Scripts\\python.exe",
+      "args": ["-m", "McuBuddy"],
+      "cwd": "E:\\work_code\\McuBuddy"
     }
   }
 }
@@ -125,7 +125,7 @@ Then configure the target, symbols, optional logs, and run `board_smoke_test()`.
 
 ## If Server Launch Fails
 
-If `py -3 -m McuBubby` fails:
+If `py -3 -m McuBuddy` fails:
 
 - confirm the Python launcher is installed
 - confirm editable install completed

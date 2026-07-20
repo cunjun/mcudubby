@@ -38,7 +38,7 @@ SAFETY_LEVELS: dict[str, dict[str, Any]] = {
         "requires_confirmation": False,
     },
     "session-changing": {
-        "summary": "Changes McuBubby session configuration or loaded debug metadata.",
+        "summary": "Changes McuBuddy session configuration or loaded debug metadata.",
         "requires_confirmation": False,
     },
     "connection-changing": {

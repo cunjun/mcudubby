@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from McuBubby.tools.probe import (
+from McuBuddy.tools.probe import (
     _evaluate_condition,
     clear_all_breakpoints,
     clear_breakpoint,

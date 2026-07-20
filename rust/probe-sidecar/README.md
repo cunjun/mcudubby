@@ -1,6 +1,6 @@
-# McuBubby probe sidecar
+# McuBuddy probe sidecar
 
-This Rust binary provides the experimental `probe-rs` execution backend for McuBubby.
+This Rust binary provides the experimental `probe-rs` execution backend for McuBuddy.
 It communicates with the Python MCP server using newline-delimited JSON-RPC 2.0 over stdio.
 
 Build it with:
@@ -9,13 +9,13 @@ Build it with:
 cargo build --release --manifest-path rust/probe-sidecar/Cargo.toml
 ```
 
-Then configure McuBubby with the resulting executable:
+Then configure McuBuddy with the resulting executable:
 
 ```text
 configure_probe(
     backend="probe-rs",
     target="STM32F103C8",
-    probe_rs_sidecar_path="rust/probe-sidecar/target/release/McuBubby-probe-sidecar.exe",
+    probe_rs_sidecar_path="rust/probe-sidecar/target/release/McuBuddy-probe-sidecar.exe",
 )
 ```
 

@@ -116,7 +116,7 @@ _PATCH_TABLE = {
             },
             "notes": [
                 "pyOCD needs the Puya PY32F0xx CMSIS-Pack for this target.",
-                "McuBubby auto-discovers Puya.PY32F0xx_DFP.*.pack from a local packs/ directory when present.",
+                "McuBuddy auto-discovers Puya.PY32F0xx_DFP.*.pack from a local packs/ directory when present.",
             ],
             "warnings": [
                 "If attach is unstable, keep SWD at 100 kHz before trying faster clocks.",
@@ -169,7 +169,7 @@ _PATCH_TABLE = {
                     "board": "ATK_PICTURE",
                     "mcu": "STM32L496VETx",
                     "probe": "ST-Link",
-                    "notes": "Primary full-stack validation board for McuBubby.",
+                    "notes": "Primary full-stack validation board for McuBuddy.",
                 }
             ],
             "validated_capabilities": [

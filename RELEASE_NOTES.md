@@ -1,6 +1,6 @@
-# McuBubby v0.5.0
+# McuBuddy v0.5.0
 
-`McuBubby` v0.5.0 重点加强并发执行、硬件操作安全边界、构建结果可信度和发布验证。
+`McuBuddy` v0.5.0 重点加强并发执行、硬件操作安全边界、构建结果可信度和发布验证。
 
 ## 本版本包含
 
@@ -17,13 +17,13 @@
 ## 安装
 
 ```bash
-pip install McuBubby
+pip install McuBuddy
 ```
 
 也可以从本 Release 下载附件安装：
 
-- `McuBubby-0.5.0-py3-none-any.whl`
-- `McuBubby-0.5.0.tar.gz`
+- `McuBuddy-0.5.0-py3-none-any.whl`
+- `McuBuddy-0.5.0.tar.gz`
 
 ## 注意事项
 

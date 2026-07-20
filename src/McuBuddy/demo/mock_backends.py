@@ -10,7 +10,7 @@ class MockProbeBackend:
             {
                 "unique_id": "mock-probe-001",
                 "description": "Mock CMSIS-DAP Probe",
-                "vendor_name": "McuBubby",
+                "vendor_name": "McuBuddy",
                 "product_name": "Mock Probe",
             }
         ]

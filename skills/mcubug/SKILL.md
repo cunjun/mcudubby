@@ -1,13 +1,13 @@
 ---
 name: mcubug
-description: Use when debugging embedded MCU boards or firmware with McuBubby, pyOCD, J-Link, ST-Link, CMSIS-DAP, HardFault/crash symptoms, boot failures, silent UART/SPI/I2C/GPIO peripherals, CPU register or memory inspection, ELF/DWARF source debugging, SVD peripheral registers, FreeRTOS task state, RTT/UART logs, Keil UV4 build/flash loops, GDB servers, or board bring-up.
+description: Use when debugging embedded MCU boards or firmware with McuBuddy, pyOCD, J-Link, ST-Link, CMSIS-DAP, HardFault/crash symptoms, boot failures, silent UART/SPI/I2C/GPIO peripherals, CPU register or memory inspection, ELF/DWARF source debugging, SVD peripheral registers, FreeRTOS task state, RTT/UART logs, Keil UV4 build/flash loops, GDB servers, or board bring-up.
 ---
 
 # mcubug
 
 ## Core Principle
 
-Use `McuBubby` as a structured evidence collector for real embedded boards. Prefer direct hardware
+Use `McuBuddy` as a structured evidence collector for real embedded boards. Prefer direct hardware
 evidence over speculation, non-destructive reads before writes, and symptom-oriented diagnosis
 before manual low-level probing.
 
@@ -26,7 +26,7 @@ Load only the reference needed for the current task:
 | Firmware command reaches an actuator but hardware does not move | `references/peripheral-actuator-debug-playbook.md` |
 | Recording or updating real-board validation evidence | `references/board-validation-guide.md` |
 
-If direct `McuBubby` MCP tools are not available, explain that missing integration and provide the
+If direct `McuBuddy` MCP tools are not available, explain that missing integration and provide the
 exact tool sequence or setup change the user should run.
 
 ## Default Flow
@@ -46,7 +46,7 @@ When the user reports a board problem and has not specified commands:
 
 ## Concurrency and Session Ordering
 
-Treat one `McuBubby` server session as one ordered hardware-debug channel. The server serializes
+Treat one `McuBuddy` server session as one ordered hardware-debug channel. The server serializes
 tools that share probe, backend, ELF/SVD, log, build, or runtime configuration state. Independent
 server sessions may execute in parallel, and stateless metadata queries may overlap session work.
 

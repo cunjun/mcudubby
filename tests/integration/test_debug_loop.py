@@ -1,6 +1,6 @@
-from McuBubby.config import RuntimeConfig
-from McuBubby.demo.mock_session import MockSessionState
-from McuBubby.tools.debug_loop import run_debug_loop
+from McuBuddy.config import RuntimeConfig
+from McuBuddy.demo.mock_session import MockSessionState
+from McuBuddy.tools.debug_loop import run_debug_loop
 
 
 class _HealthyLogBackend:

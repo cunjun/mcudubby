@@ -1,6 +1,6 @@
 use std::io::{self, BufRead, Write};
 
-use McuBubby_probe_sidecar::{handle_request_line, SidecarState};
+use mcu_buddy_probe_sidecar::{handle_request_line, SidecarState};
 
 fn main() {
     let stdin = io::stdin();

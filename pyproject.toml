@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "McuBubby"
+name = "McuBuddy"
 version = "0.5.0"
 description = "AI-native debugging and observability for embedded boards"
 readme = "README.md"
@@ -53,10 +53,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/cunjun/McuBubby"
-Documentation = "https://github.com/cunjun/McuBubby#readme"
-Repository = "https://github.com/cunjun/McuBubby"
-Issues = "https://github.com/cunjun/McuBubby/issues"
+Homepage = "https://github.com/cunjun/McuBuddy"
+Documentation = "https://github.com/cunjun/McuBuddy#readme"
+Repository = "https://github.com/cunjun/McuBuddy"
+Issues = "https://github.com/cunjun/McuBuddy/issues"
 
 [project.optional-dependencies]
 jlink = [
@@ -68,10 +68,10 @@ dev = [
 ]
 
 [project.scripts]
-McuBubby = "McuBubby.server:main"
+McuBuddy = "McuBuddy.server:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/McuBubby"]
+packages = ["src/McuBuddy"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests/unit", "tests/integration"]

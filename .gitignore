@@ -12,6 +12,7 @@ env/
 # Tool caches
 .pytest_cache/
 .test-tmp/
+.uv-cache/
 .ruff_cache/
 .mypy_cache/
 .cargo-home/

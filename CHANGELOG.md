@@ -18,7 +18,7 @@
 ## 0.4.0 - 2026-07-11
 
 ### Released
-- Published the initial `McuBubby` v0.4.0 release.
+- Published the initial `McuBuddy` v0.4.0 release.
 
 ## 0.2.0 - 2026-04-01
 
