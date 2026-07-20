@@ -1,6 +1,6 @@
-# McuBuddy v0.5.0
+# McuBuddy v0.5.1
 
-`McuBuddy` v0.5.0 重点加强并发执行、硬件操作安全边界、构建结果可信度和发布验证。
+`McuBuddy` v0.5.1 整合 McuBuddy 命名、PyPI 所有权元数据和 MCP Registry 发布配置，并保留 0.5.0 的并发、安全及构建可靠性改进。
 
 ## 本版本包含
 
@@ -22,8 +22,8 @@ pip install McuBuddy
 
 也可以从本 Release 下载附件安装：
 
-- `McuBuddy-0.5.0-py3-none-any.whl`
-- `McuBuddy-0.5.0.tar.gz`
+- `McuBuddy-0.5.1-py3-none-any.whl`
+- `McuBuddy-0.5.1.tar.gz`
 
 ## 注意事项
 
