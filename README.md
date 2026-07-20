@@ -1,130 +1,138 @@
-# McuBubby
+# McuBuddy
 
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![MCP](https://img.shields.io/badge/MCP-server-8A2BE2)](https://modelcontextprotocol.io/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-**让 AI 不只会分析固件代码，也能连接真实 MCU、操作调试工具并收集板级证据。**
+**Languages:** [English](README.md) | [中文](README_zh.md)
 
-`McuBubby` 是一个面向 MCU 板级调试的
-[Model Context Protocol（MCP）](https://modelcontextprotocol.io/) 服务端。它把调试探针、
-Keil MDK 工程、ELF/DWARF 符号、CPU 与内存状态、SVD 外设寄存器、UART/RTT 日志、
-FreeRTOS 状态、Flash 操作和 GDB Server 统一成 AI 助手可以调用的结构化工具。
+**Let AI do more than analyze firmware code: connect to real MCUs, operate debugging tools, and collect board-level evidence.**
 
-它适合固件开发、板卡 Bring-up、故障定位、调试自动化和 AI 辅助验证。
+`McuBuddy` is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for
+MCU board-level debugging. It exposes debug probes, Keil MDK projects, ELF/DWARF symbols,
+CPU and memory state, SVD peripheral registers, UART/RTT logs, FreeRTOS state, Flash operations,
+and GDB servers as structured tools that AI assistants can call.
+
+It is designed for firmware development, board bring-up, fault isolation, debugging automation,
+and AI-assisted validation.
 
 > [!IMPORTANT]
-> 项目仍处于 Alpha 阶段。人负责目标、接线和风险决策；AI 负责调用工具、组织证据和推进调试。
-> 涉及复位、运行控制、内存写入和 Flash 擦写时，应先确认目标、影响和恢复方式。
+> This project is still in Alpha. Humans remain responsible for goals, wiring, and risk decisions;
+> AI calls tools, organizes evidence, and advances the debugging process. Before resets, execution
+> control, memory writes, or Flash operations, confirm the target, impact, and recovery plan.
 
-**文档入口：** [快速开始](docs/quickstart.md) ·
-[工具索引](docs/tool-reference.md) ·
-[支持矩阵](docs/support-matrix.md) ·
-[项目架构](docs/architecture.md)
+**Documentation:** [Quickstart](docs/quickstart.md) ·
+[Tool Reference](docs/tool-reference.md) ·
+[Support Matrix](docs/support-matrix.md) ·
+[Architecture](docs/architecture.md)
 
-## ✨ 核心能力
+## ✨ Key Features
 
-- **真实硬件调试**：发现并连接 ST-Link、J-Link、CMSIS-DAP 等探针，控制目标运行状态，
-  读取寄存器、内存、断点和观察点。
-- **Keil 工程闭环**：发现 `.uvprojx` / `.uvproj`，选择 Target，调用 UV4 构建或下载，
-  并将生成的 AXF/ELF 接入后续调试。
-- **源码级故障诊断**：利用 ELF/DWARF 将地址还原为函数、源码行、局部变量和调用栈，
-  辅助分析 HardFault、启动失败、栈溢出和内存破坏。
-- **外设与 RTOS 检查**：通过 CMSIS-SVD 解码外设寄存器，检查 FreeRTOS 任务、任务上下文
-  和栈使用情况。
-- **日志与运行观测**：读取 UART、RTT 和部分 J-Link SWO 日志，管理 pyOCD/J-Link
-  GDB Server 生命周期。
-- **安全边界**：为工具标记只读、执行状态变化、运行时写入和持久性破坏等级，要求高风险
-  操作显式确认。
-- **证据驱动**：返回结构化的目标、状态和验证结果，让 AI 基于板级证据继续排查，
-  而不是只根据现象猜测修改代码。
+- **Real-hardware debugging**: Discover and connect to ST-Link, J-Link, CMSIS-DAP, and other
+  probes; control target execution; and inspect registers, memory, breakpoints, and watchpoints.
+- **Keil project workflow**: Discover `.uvprojx` / `.uvproj` files, select a target, invoke UV4
+  builds or downloads, and feed the generated AXF/ELF into the debugging workflow.
+- **Source-level fault diagnosis**: Use ELF/DWARF data to resolve addresses to functions, source
+  lines, local variables, and call stacks when investigating HardFaults, startup failures, stack
+  overflows, and memory corruption.
+- **Peripheral and RTOS inspection**: Decode peripheral registers through CMSIS-SVD and inspect
+  FreeRTOS tasks, task contexts, and stack usage.
+- **Logs and runtime observability**: Read UART, RTT, and selected J-Link SWO logs, and manage
+  pyOCD/J-Link GDB server lifecycles.
+- **Safety boundaries**: Classify tools as read-only, execution-changing, runtime-writing, or
+  persistently destructive, with explicit confirmation for high-risk operations.
+- **Evidence-driven results**: Return structured target, state, and validation evidence so AI can
+  continue an investigation instead of guessing code changes from symptoms alone.
 
-## 🏗️ 工作原理
+## 🏗️ How It Works
 
 ```mermaid
 flowchart LR
-    AI["AI 客户端<br/>Codex / Claude Code"] --> MCP["McuBubby<br/>MCP Server"]
-    MCP --> EB["执行边界<br/>Session 串行化"]
-    EB --> TOOLS["调试工具<br/>诊断 / 符号 / SVD / RTOS / 日志"]
-    TOOLS --> KEIL["Keil UV4<br/>构建 / 可选下载"]
-    TOOLS --> PROBE["探针后端<br/>pyOCD / J-Link / probe-rs"]
+    AI["AI Client<br/>Codex / Claude Code"] --> MCP["McuBuddy<br/>MCP Server"]
+    MCP --> EB["Execution Boundary<br/>Serialized Session"]
+    EB --> TOOLS["Debugging Tools<br/>Diagnostics / Symbols / SVD / RTOS / Logs"]
+    TOOLS --> KEIL["Keil UV4<br/>Build / Optional Download"]
+    TOOLS --> PROBE["Probe Backends<br/>pyOCD / J-Link / probe-rs"]
     KEIL --> IMAGE["AXF / ELF / HEX / BIN"]
     IMAGE --> TOOLS
-    PROBE --> BOARD["真实 MCU 开发板"]
+    PROBE --> BOARD["Real MCU Board"]
 ```
 
-| 组件 | 主要职责 |
+| Component | Responsibility |
 | --- | --- |
-| Codex、Claude Code 等 AI 客户端 | 理解问题、选择工具、解释结果并提出下一步检查 |
-| MCP | AI 客户端与 `McuBubby` 之间的标准工具调用协议 |
-| `McuBubby` | 管理调试 Session、调用后端、执行安全检查并返回结构化结果 |
-| Keil MDK / UV4 | 构建和链接 Keil 工程，并可按配置执行固件下载 |
-| pyOCD、J-Link、实验性 probe-rs | 连接调试探针，控制目标并访问寄存器、内存、断点和 Flash |
-| ELF/AXF、DWARF、SVD | 提供符号、源码、变量、调用栈和外设寄存器语义 |
+| AI clients such as Codex and Claude Code | Understand the problem, select tools, interpret results, and propose the next checks |
+| MCP | Standard tool-calling protocol between the AI client and `McuBuddy` |
+| `McuBuddy` | Manage debug sessions, invoke backends, enforce safety checks, and return structured results |
+| Keil MDK / UV4 | Build and link Keil projects, with optional configured firmware download |
+| pyOCD, J-Link, and experimental probe-rs | Connect to probes and access target registers, memory, breakpoints, and Flash |
+| ELF/AXF, DWARF, and SVD | Provide symbols, source locations, variables, call stacks, and peripheral-register semantics |
 
-MCP 不是“调用 Keil 的协议”。AI 通过 MCP 调用 `McuBubby`；`McuBubby` 再根据任务使用
-Keil UV4、pyOCD、J-Link 或其他内部后端。
+MCP is not a protocol for invoking Keil. The AI calls `McuBuddy` through MCP; `McuBuddy` then
+uses Keil UV4, pyOCD, J-Link, or another internal backend as required by the task.
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 1. 准备环境
+### 1. Prerequisites
 
-基本要求：
+Basic requirements:
 
-- Python 3.10 或更高版本；
-- 一块已供电的 MCU 开发板；
-- 正确连接的 ST-Link、J-Link 或 CMSIS-DAP 探针；
-- 目标芯片名称；
-- 推荐准备带调试信息的 ELF/AXF。
+- Python 3.10 or later;
+- a powered MCU development board;
+- a correctly connected ST-Link, J-Link, or CMSIS-DAP probe;
+- the target chip name;
+- preferably, an ELF/AXF image containing debug information.
 
-只有在使用 Keil 构建或下载功能时，才需要 Windows 和已安装的 Keil MDK / UV4。
+Windows and an installed Keil MDK / UV4 are required only for Keil build or download features.
 
-### 2. 安装
+### 2. Installation
 
 ```bash
-pip install McuBubby
+pip install McuBuddy
 ```
 
-使用 J-Link Python 后端时安装可选依赖：
+Install the optional dependency when using the J-Link Python backend:
 
 ```bash
-pip install "McuBubby[jlink]"
+pip install "McuBuddy[jlink]"
 ```
 
-从源码开发：
+For development from source:
 
 ```bash
-git clone https://github.com/cunjun/McuBubby.git
-cd McuBubby
+git clone https://github.com/cunjun/McuBuddy.git
+cd McuBuddy
 pip install -e ".[dev]"
 ```
 
-### 3. 配置 MCP 客户端
+### 3. Configure an MCP Client
 
 ```json
 {
   "mcpServers": {
-    "McuBubby": {
+    "McuBuddy": {
       "command": "python",
-      "args": ["-m", "McuBubby"]
+      "args": ["-m", "McuBuddy"]
     }
   }
 }
 ```
 
-Windows 源码环境建议显式配置虚拟环境 Python 和工作目录，详见
-[Windows MCP 配置示例](docs/windows-mcp-config-example.md)。配置后重新启动 AI 客户端。
+For a Windows source checkout, explicitly configure the virtual-environment Python executable and
+working directory. See the [Windows MCP Configuration Example](docs/windows-mcp-config-example.md),
+then restart the AI client.
 
-### 4. 第一次只读检查
+### 4. Run a First Read-Only Check
 
-连接探针并给开发板供电后，可以直接告诉 AI：
+After connecting the probe and powering the board, tell the AI:
 
 ```text
-请使用 McuBubby 检查当前调试环境，查找已连接的探针，并在不写入 Flash 的前提下
-对开发板做第一次只读检查。开始前先告诉我还缺少哪些信息。
+Use McuBuddy to inspect the current debugging environment, discover connected probes,
+and perform a first read-only check of the board without writing Flash.
+Before starting, tell me what information is still missing.
 ```
 
-推荐先运行环境和目标预检，再配置探针并读取最小状态：
+The recommended sequence is to check the environment and target first, then configure the probe
+and read the minimum target state:
 
 ```text
 doctor()
@@ -134,102 +142,108 @@ configure_probe(target="py32f030x8", backend="pyocd")
 board_smoke_test(disconnect_after=True)
 ```
 
-`board_smoke_test` 不写入 Flash，但默认可能暂停目标以读取稳定上下文，因此仍属于执行状态变化。
-如果设备不能被暂停，应先告诉 AI 只做非侵入式探针和环境检查。
+`board_smoke_test` does not write Flash, but it may halt the target by default to capture a stable
+context, so it is still execution-changing. If the device must not be halted, instruct the AI to
+perform only non-intrusive probe and environment checks.
 
-## 💬 AI 使用示例
+## 💬 Examples for AI Assistants
 
-这些提示词可以直接交给已连接 `McuBubby` 的 AI 助手。
+The following prompts can be given directly to an AI assistant connected to `McuBuddy`.
 
-### 检查探针和开发板
-
-```text
-列出当前连接的调试探针，确认目标芯片是否匹配，然后对开发板执行一次只读检查。
-不要复位、写内存或擦写 Flash；发现风险时先停下来说明。
-```
-
-### 定位 HardFault
+### Inspect the Probe and Board
 
 ```text
-暂停目标，读取 PC、LR、SP 和故障寄存器，结合当前 AXF/ELF 解析调用栈，
-判断 HardFault 最可能发生在哪段源码，并列出支持结论的证据。
+List the connected debug probes, confirm that the target chip matches, and perform a read-only
+check of the board. Do not reset the target, write memory, or erase or program Flash.
+If you identify a risk, stop and explain it first.
 ```
 
-### 构建 Keil 工程并继续调试
+### Diagnose a HardFault
 
 ```text
-在项目目录中查找 Keil 工程和 Target，先告诉我将使用哪个工程、哪个 Target 和哪个 UV4.exe。
-确认后构建工程，加载生成的 AXF，但不要下载固件；随后通过探针运行到 main。
+Halt the target and read PC, LR, SP, and the fault registers. Resolve the call stack using the
+current AXF/ELF, identify the most likely source location of the HardFault, and list the evidence
+that supports the conclusion.
 ```
 
-### 检查外设配置
+### Build a Keil Project and Continue Debugging
 
 ```text
-加载与目标芯片匹配的 SVD，读取 RCC、GPIOA 和 UART 外设状态，
-检查时钟、引脚复用和中断配置是否一致，并说明异常字段。
+Find the Keil project and targets under the project directory. First tell me which project,
+target, and UV4.exe you plan to use. After confirmation, build the project and load the generated
+AXF without downloading firmware, then use the probe to run to main.
 ```
 
-### 检查 FreeRTOS 卡顿
+### Inspect Peripheral Configuration
 
 ```text
-读取 FreeRTOS 任务列表、当前任务上下文和栈使用情况，找出阻塞、异常状态或栈风险，
-不要修改目标状态。
+Load an SVD that matches the target chip and inspect the RCC, GPIOA, and UART peripheral state.
+Check whether the clock, pin multiplexing, and interrupt configuration are consistent, and explain
+any abnormal fields.
 ```
 
-更多证据驱动的提示词和决策顺序见 [AI Playbook](docs/ai-playbook.md) 与
-[AI Examples](docs/ai-examples.md)。
+### Investigate a FreeRTOS Stall
 
-## 🧰 能力与后端支持
+```text
+Read the FreeRTOS task list, current task contexts, and stack usage. Identify blocked tasks,
+abnormal states, or stack risks without modifying the target state.
+```
 
-### 能力分类
+For more evidence-driven prompts and decision sequences, see the
+[AI Playbook](docs/ai-playbook.md) and [AI Examples](docs/ai-examples.md).
 
-| 类别 | 主要能力 |
+## 🧰 Capabilities and Backend Support
+
+### Capability Categories
+
+| Category | Main Capabilities |
 | --- | --- |
-| 探针与目标 | 探针发现、目标匹配、连接/断开、暂停/继续、复位、单步 |
-| CPU 与内存 | 核心/FPU/故障寄存器、内存读写、停止上下文、Flash 对比与校验 |
-| 断点与执行 | 硬件/软件断点、观察点、运行到函数或源码行、Step Over/Out |
-| 符号与源码 | ELF/AXF、DWARF、反汇编、函数与变量、源码定位、调用栈 |
-| 外设与 RTOS | CMSIS-SVD、外设字段、FreeRTOS 任务、任务上下文、栈检查 |
-| 日志与服务 | UART、RTT、部分 SWO、pyOCD/J-Link GDB Server |
-| 工程与诊断 | Keil 工程发现、构建/下载、HardFault、启动、时钟、中断和外设诊断 |
+| Probes and targets | Probe discovery, target matching, connect/disconnect, halt/resume, reset, and stepping |
+| CPU and memory | Core/FPU/fault registers, memory access, stopped context, Flash comparison, and verification |
+| Breakpoints and execution | Hardware/software breakpoints, watchpoints, run-to-function/source, and Step Over/Out |
+| Symbols and source | ELF/AXF, DWARF, disassembly, functions, variables, source mapping, and call stacks |
+| Peripherals and RTOS | CMSIS-SVD, peripheral fields, FreeRTOS tasks, task contexts, and stack checks |
+| Logs and services | UART, RTT, selected SWO, and pyOCD/J-Link GDB servers |
+| Projects and diagnostics | Keil project discovery, build/download, HardFault, startup, clock, interrupt, and peripheral diagnosis |
 
-完整工具名称、参数和返回值见 [Tool Reference](docs/tool-reference.md)。
+For complete tool names, parameters, and return values, see the
+[Tool Reference](docs/tool-reference.md).
 
-### 后端支持状态
+### Backend Support Status
 
-| 路径 | 当前定位 | 主要能力 |
+| Path | Current Role | Main Capabilities |
 | --- | --- | --- |
-| pyOCD + ST-Link/CMSIS-DAP | 主要后端 | 控制、内存、Flash、源码调试、RTT、RTOS、GDB Server |
-| J-Link | 主要后端 | 控制、内存、Flash、源码调试、原生 RTT、DWT、GDB Server |
-| probe-rs sidecar | 实验性 | 发现、连接、核心控制、寄存器、内存、硬件断点 |
-| Keil UV4（Windows） | 构建/下载后端 | 工程发现、Target 配置、构建、日志、可选下载 |
+| pyOCD + ST-Link/CMSIS-DAP | Primary backend | Control, memory, Flash, source debugging, RTT, RTOS, and GDB server |
+| J-Link | Primary backend | Control, memory, Flash, source debugging, native RTT, DWT, and GDB server |
+| probe-rs sidecar | Experimental | Discovery, connection, core control, registers, memory, and hardware breakpoints |
+| Keil UV4 (Windows) | Build/download backend | Project discovery, target configuration, build, logs, and optional download |
 
-已重点验证：
+Primary validation coverage includes:
 
-- STM32L496VETx + ST-Link / pyOCD；
-- STM32F103C8 + J-Link；
-- 内置目标预检还包括 STM32F103ZE 和 PY32F030X8。
+- STM32L496VETx + ST-Link / pyOCD;
+- STM32F103C8 + J-Link;
+- built-in target preflight profiles for STM32F103ZE and PY32F030X8.
 
-“代码已实现”不等于“所有板卡均已验证”。准确记录以
-[Support Matrix](docs/support-matrix.md) 和 `list_validation_records()` 为准。
+“Implemented in code” does not mean “validated on every board.” Use the
+[Support Matrix](docs/support-matrix.md) and `list_validation_records()` as the source of truth.
 
-## 🔄 Keil MDK / UV4 工作流
+## 🔄 Keil MDK / UV4 Workflow
 
-Keil 在本项目中承担工程构建、链接和可选的固件下载。`McuBubby` 不替代 Keil 编译器，
-也不解析或重写工程构建规则；它负责发现工程、选择 Target、调用 UV4、读取日志与输出文件，
-并把结果接入后续自动化调试。
+Keil provides project build, linking, and optional firmware download. `McuBuddy` does not replace
+the Keil compiler or parse and rewrite project build rules. It discovers projects, selects targets,
+invokes UV4, reads logs and output files, and feeds the results into automated debugging.
 
 ```text
-发现 Keil 工程
-  → 配置 UV4、Target 和日志
-  → 调用 Keil 构建
-  → 加载生成的 AXF/ELF
-  → 通过 pyOCD/J-Link 连接开发板并诊断
-  → 用户确认后调用 Keil 下载
-  → 重新连接并验证 Flash
+Discover the Keil project
+  → Configure UV4, the target, and logs
+  → Invoke the Keil build
+  → Load the generated AXF/ELF
+  → Connect through pyOCD/J-Link and diagnose the board
+  → Download through Keil after user confirmation
+  → Reconnect and verify Flash
 ```
 
-### 1. 发现并配置工程
+### 1. Discover and Configure a Project
 
 ```text
 discover_keil_projects(root=r"E:\work_code\app")
@@ -241,10 +255,10 @@ configure_keil_project(
 )
 ```
 
-自动发现结果应由用户或 AI 检查。一个目录存在多个工程、Target 或输出文件时，建议显式传入
-`project_path`、`target_name` 和 `elf_path`。
+The user or AI should review automatic discovery results. When a directory contains multiple
+projects, targets, or output files, explicitly specify `project_path`, `target_name`, and `elf_path`.
 
-### 2. 构建并加载 AXF
+### 2. Build and Load the AXF
 
 ```text
 build_project(timeout_seconds=120)
@@ -252,9 +266,10 @@ configure_elf(elf_path=r"E:\work_code\app\MDK-ARM\Objects\Project.axf")
 elf_load(path=r"E:\work_code\app\MDK-ARM\Objects\Project.axf")
 ```
 
-加载 AXF 后，AI 才能稳定地把 PC、LR 和内存地址解析为函数、源码行、局部变量与调用栈。
+Once the AXF is loaded, the AI can reliably resolve PC, LR, and memory addresses to functions,
+source lines, local variables, and call stacks.
 
-### 3. 连接探针继续调试
+### 3. Connect the Probe and Continue Debugging
 
 ```text
 configure_probe(target="py32f030x8", backend="pyocd")
@@ -264,24 +279,26 @@ read_stopped_context()
 run_to_function("main")
 ```
 
-如果 Keil、J-Link Commander、GDB Server 或其他调试器已经占用探针，应先关闭对应会话，
-否则 pyOCD/J-Link 可能无法连接。
+If Keil, J-Link Commander, a GDB server, or another debugger already owns the probe, close that
+session first; otherwise pyOCD or J-Link may fail to connect.
 
-### 4. 下载与验证
+### 4. Download and Verify
 
-`flash_firmware` 会调用配置好的 Keil UV4 下载流程并修改目标 Flash，因此必须明确确认：
+`flash_firmware` invokes the configured Keil UV4 download flow and modifies target Flash, so it
+requires explicit confirmation:
 
 ```text
 flash_firmware(timeout_seconds=120, confirm=True)
 compare_elf_to_flash()
 ```
 
-下载前应确认工程、Target、固件输出、芯片型号和恢复策略。更完整的新工程接入流程见
-[Generic Board Workflow](docs/generic-board-workflow.md)。
+Before downloading, confirm the project, target, firmware output, chip model, and recovery plan.
+For the complete new-project workflow, see the
+[Generic Board Workflow](docs/generic-board-workflow.md).
 
-## 🔍 常见调试流程
+## 🔍 Common Debugging Workflows
 
-### 板卡无法启动或进入 HardFault
+### Board Does Not Start or Enters HardFault
 
 ```text
 probe_halt()
@@ -290,7 +307,7 @@ diagnose_hardfault()
 backtrace()
 ```
 
-### 外设没有输出
+### Peripheral Produces No Output
 
 ```text
 svd_load(svd_path=r"C:\path\Device.svd")
@@ -299,7 +316,7 @@ svd_read_peripheral(peripheral="GPIOA")
 diagnose_peripheral_stuck(peripheral="UART")
 ```
 
-### FreeRTOS 卡住
+### FreeRTOS Stalls
 
 ```text
 list_rtos_tasks()
@@ -307,7 +324,7 @@ rtos_task_context(task_name="WorkerTask")
 read_stack_usage()
 ```
 
-### 运行到指定源码位置
+### Run to a Source Location
 
 ```text
 run_to_function("main")
@@ -316,77 +333,84 @@ source_step()
 step_over()
 ```
 
-## 🛡️ 安全模型
+## 🛡️ Safety Model
 
-`McuBubby` 为工具提供机器可读的安全分类，可通过 `list_tool_safety()` 查询。
+`McuBuddy` provides machine-readable safety classifications through `list_tool_safety()`.
 
-| 类别 | 例子 | 默认要求 |
+| Category | Examples | Default Requirement |
 | --- | --- | --- |
-| 只读 | 目标匹配、寄存器/内存读取、符号解析、日志、诊断 | 不要求确认 |
-| 执行状态变化 | halt、resume、reset、continue、单步 | 不写 Flash，但会改变运行状态 |
-| 运行时状态写入 | 内存/寄存器写入、断点、观察点、SVD 字段写入 | 明确确认 |
-| 持久性破坏操作 | Flash 擦除、编程、Keil 固件下载 | 明确确认 |
-| 主机进程 | Keil 构建、GDB Server 启停 | 会启动或停止本机进程 |
+| Read-only | Target matching, register/memory reads, symbol resolution, logs, diagnostics | No confirmation required |
+| Execution-changing | halt, resume, reset, continue, stepping | Does not write Flash, but changes execution state |
+| Runtime-state write | Memory/register writes, breakpoints, watchpoints, SVD field writes | Explicit confirmation |
+| Persistent destructive operation | Flash erase/program, Keil firmware download | Explicit confirmation |
+| Host process | Keil build, GDB server start/stop | Starts or stops a local process |
 
-安全原则：
+Safety principles:
 
-1. 未知目标先匹配芯片和探针，不猜测地址。
-2. 优先读取证据，再暂停、复位或写入。
-3. Flash 操作前确认目标、范围、镜像和恢复方式。
-4. 电机、继电器、电源开关等执行器优先使用断点和低能量测试。
+1. For an unknown target, match the chip and probe first; do not guess addresses.
+2. Read evidence before halting, resetting, or writing.
+3. Before a Flash operation, confirm the target, scope, image, and recovery method.
+4. For motors, relays, power switches, and other actuators, prefer breakpoints and low-energy tests.
 
-## 🔒 Session 与并发行为
+## 🔒 Sessions and Concurrency
 
-- 同一个 `Session` 中，共享探针、Keil、ELF/SVD、日志和运行配置的操作会串行执行。
-- 不同 Session 可以并行，适合互不相关的多块开发板。
-- 目标匹配、工具安全信息等无状态查询可以与 Session 操作并发。
-- 取消请求不能强行终止已经进入同步 SDK 的调用；服务器会等工作线程结束后再释放 Session 锁。
+- Operations that share probe, Keil, ELF/SVD, log, and runtime configuration are serialized within
+  the same `Session`.
+- Different sessions can run concurrently when they control unrelated boards.
+- Stateless queries such as target matching and tool safety information can run alongside session
+  operations.
+- Cancellation cannot forcibly terminate a call that has entered a synchronous SDK. The server
+  waits for the worker thread to finish before releasing the session lock.
 
-这可以避免一个探针操作尚未完成时，另一个请求同时切换后端、断开连接或修改共享状态。
+This prevents one request from switching backends, disconnecting the probe, or changing shared
+state while another probe operation is still running.
 
 ## 📦 mcubug Skill
 
-仓库包含 `skills/mcubug`，用于指导 Codex 和 Claude Code 按“先证据、后判断”的顺序使用
-这些工具，而不是把 MCP 工具当作无序命令列表。
+The repository includes `skills/mcubug`, which guides Codex and Claude Code to use these tools in an
+“evidence first, judgment second” sequence instead of treating MCP tools as an unordered command list.
 
-安装到 Codex：
+Install for Codex:
 
 ```powershell
 python .\skills\mcubug\scripts\install_skill.py --target codex --overwrite
 ```
 
-安装到 Claude Code：
+Install for Claude Code:
 
 ```powershell
 python .\skills\mcubug\scripts\install_skill.py --target cc --overwrite
 ```
 
-安装完成后重启客户端或新建会话。详细说明见
-[mcubug Skill for Codex and Claude Code](docs/mcubug-skill.md)。
+Restart the client or open a new session after installation. See
+[mcubug Skill for Codex and Claude Code](docs/mcubug-skill.md) for details.
 
-## ⚠️ 当前限制
+## ⚠️ Current Limitations
 
-- Keil 构建和下载目前面向 Windows + Keil UV4。
-- probe-rs sidecar 仍是实验性后端，尚未覆盖 Flash、RTT、SWO 和正式发布二进制。
-- RTOS 检查依赖与目标固件匹配的 FreeRTOS 符号和 ELF/AXF。
-- SVD 文件不随所有芯片自动提供，通常需要来自 CMSIS-Pack 或芯片厂商。
-- SWO 文本捕获受芯片配置、探针能力、引脚复用和板级接线影响。
-- 设备补丁和连接策略仍是轻量机制，不是完整的板卡插件系统。
+- Keil build and download currently target Windows + Keil UV4.
+- The probe-rs sidecar remains experimental and does not yet cover Flash, RTT, SWO, or an official
+  binary release.
+- RTOS inspection depends on FreeRTOS symbols and an ELF/AXF that match the target firmware.
+- SVD files are not bundled automatically for every chip and usually come from a CMSIS-Pack or
+  the chip vendor.
+- SWO text capture depends on chip configuration, probe capabilities, pin multiplexing, and board wiring.
+- Device patches and connection strategies remain lightweight mechanisms rather than a complete
+  board plugin system.
 
-## 📚 文档导航
+## 📚 Documentation
 
-- 第一次使用：[Quickstart](docs/quickstart.md)
-- 接入任意板卡和 Keil 工程：[Generic Board Workflow](docs/generic-board-workflow.md)
-- MCP 会话示例：[MCP Usage Example](docs/mcp-usage-example.md)
-- AI 调试决策顺序：[AI Playbook](docs/ai-playbook.md)
-- 常见场景示例：[AI Examples](docs/ai-examples.md)
-- 完整工具索引：[Tool Reference](docs/tool-reference.md)
-- 后端与硬件验证：[Support Matrix](docs/support-matrix.md)
-- 项目架构：[Architecture](docs/architecture.md)
-- Skill 安装维护：[mcubug Skill](docs/mcubug-skill.md)
-- 后续路线：[v0.6 Roadmap](docs/v0.6-roadmap.md)
+- First-time setup: [Quickstart](docs/quickstart.md)
+- Any board and Keil project: [Generic Board Workflow](docs/generic-board-workflow.md)
+- MCP session walkthrough: [MCP Usage Example](docs/mcp-usage-example.md)
+- AI debugging decision order: [AI Playbook](docs/ai-playbook.md)
+- Common scenarios: [AI Examples](docs/ai-examples.md)
+- Complete tool index: [Tool Reference](docs/tool-reference.md)
+- Backend and hardware validation: [Support Matrix](docs/support-matrix.md)
+- Project design: [Architecture](docs/architecture.md)
+- Skill installation and maintenance: [mcubug Skill](docs/mcubug-skill.md)
+- Planned work: [v0.6 Roadmap](docs/v0.6-roadmap.md)
 
-## 🧪 本地开发
+## 🧪 Local Development
 
 ```bash
 pip install -e ".[dev]"
@@ -394,12 +418,12 @@ pytest
 ruff check src tests
 ```
 
-项目目录约定和贡献文档归属见 [Docs Index](docs/README.md)。
+See the [Docs Index](docs/README.md) for repository layout and documentation ownership.
 
 ## 📄 License
 
-本项目采用 MIT License，详见 [LICENSE](LICENSE)。
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
 ---
 
-如果 `McuBubby` 对你的 MCU 调试工作有帮助，欢迎给项目一个 Star。
+If `McuBuddy` helps with your MCU debugging workflow, consider giving the project a Star.
