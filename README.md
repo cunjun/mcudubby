@@ -1,4 +1,4 @@
-# McuBuddy
+# McuBuddy — AI-Powered MCU and Embedded Firmware Debugging MCP Server
 
 <!-- mcp-name: io.github.cunjun/mcubuddy -->
 

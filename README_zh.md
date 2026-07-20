@@ -1,4 +1,4 @@
-# McuBuddy
+# McuBuddy — MCU 与嵌入式固件 AI 调试 MCP 服务
 
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![MCP](https://img.shields.io/badge/MCP-server-8A2BE2)](https://modelcontextprotocol.io/)
