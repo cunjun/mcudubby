@@ -1,5 +1,9 @@
 # mcudubby
 
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
+[![MCP](https://img.shields.io/badge/MCP-server-8A2BE2)](https://modelcontextprotocol.io/)
+[![License](https://img.shields.io/badge/license-MIT-green)](./许可证)
+
 **让 AI 不只会分析固件代码，也能连接真实 MCU、操作调试工具并收集板级证据。**
 
 > 人负责目标、接线和风险决策，AI 负责调用工具、组织证据和推进调试。
