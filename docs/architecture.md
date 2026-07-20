@@ -1,19 +1,19 @@
 # Architecture
 
-`McuBubby` is organized around three layers:
+`McuBuddy` is organized around three layers:
 
-1. MCP application layer: `McuBubby.server` creates the FastMCP app and session.
-2. MCP registration layer: `McuBubby.mcp_tools` exposes user-facing MCP tools by domain.
-3. Domain tool layer: `McuBubby.tools` implements behavior without depending on MCP.
+1. MCP application layer: `McuBuddy.server` creates the FastMCP app and session.
+2. MCP registration layer: `McuBuddy.mcp_tools` exposes user-facing MCP tools by domain.
+3. Domain tool layer: `McuBuddy.tools` implements behavior without depending on MCP.
 
 ## Application Entry
 
-`src/McuBubby/server.py` should stay small. It owns app creation and process startup only.
+`src/McuBuddy/server.py` should stay small. It owns app creation and process startup only.
 Do not add tool implementations or long registration blocks there.
 
 ## MCP Tool Registration
 
-`src/McuBubby/mcp_tools/` contains one registration module per user-facing domain:
+`src/McuBuddy/mcp_tools/` contains one registration module per user-facing domain:
 
 - `runtime.py`: configuration, profiles, first contact, and debug loop tools
 - `build_debug.py`: build, flash, and GDB server lifecycle tools
@@ -27,7 +27,7 @@ domain tools and should not contain hardware logic.
 
 ## MCP Execution Boundary
 
-`src/McuBubby/mcp_execution.py` wraps every registered MCP tool before FastMCP exposes it.
+`src/McuBuddy/mcp_execution.py` wraps every registered MCP tool before FastMCP exposes it.
 Tool callbacks run in worker threads so blocking probe SDK, sidecar, filesystem, and build calls
 do not block the MCP event loop.
 
@@ -48,7 +48,7 @@ calling the execution boundary directly.
 
 ## Domain Tools
 
-`src/McuBubby/tools/` contains behavior-oriented modules that can be tested without MCP.
+`src/McuBuddy/tools/` contains behavior-oriented modules that can be tested without MCP.
 Keep public compatibility modules as small re-export layers when a domain becomes a package.
 
 The experimental `probe-rs` backend uses `rust/probe-sidecar/` as a hardware execution sidecar.
@@ -56,7 +56,7 @@ Python remains the owner of MCP, sessions, diagnosis, ELF/DWARF, SVD, and RTOS s
 sidecar owns probe-rs sessions and exchanges versioned, newline-delimited JSON-RPC messages over
 stdio. Keep this protocol internal; it is not a second MCP surface.
 
-`src/McuBubby/tools/probe/` is the probe domain package:
+`src/McuBuddy/tools/probe/` is the probe domain package:
 
 - `core.py`: connection and basic target control
 - `breakpoints.py` and `conditions.py`: breakpoint behavior

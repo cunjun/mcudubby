@@ -3,8 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace
 
-from McuBubby.elf_manager import ElfManager
-from McuBubby.tools.probe import read_memory_map
+from McuBuddy.elf_manager import ElfManager
+from McuBuddy.tools.probe import read_memory_map
 
 
 class _FakeSection:
@@ -52,7 +52,7 @@ class _FakeElfFile:
 
 
 def test_elf_manager_get_sections_includes_lma(monkeypatch, tmp_path: Path) -> None:
-    monkeypatch.setattr("McuBubby.elf_manager.ELFFile", _FakeElfFile)
+    monkeypatch.setattr("McuBuddy.elf_manager.ELFFile", _FakeElfFile)
 
     elf_path = tmp_path / "fake.elf"
     elf_path.write_bytes(b"fake")

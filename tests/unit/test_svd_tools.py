@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from McuBubby.svd_manager import SvdManager
+from McuBuddy.svd_manager import SvdManager
 
 
 # ---------------------------------------------------------------------------

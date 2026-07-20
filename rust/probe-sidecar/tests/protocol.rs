@@ -1,4 +1,4 @@
-use McuBubby_probe_sidecar::{canonical_register_name, handle_request_line, SidecarState};
+use mcu_buddy_probe_sidecar::{canonical_register_name, handle_request_line, SidecarState};
 use serde_json::{json, Value};
 
 #[test]
@@ -29,7 +29,7 @@ fn unknown_method_returns_json_rpc_method_not_found() {
 }
 
 #[test]
-fn cortex_m_register_names_match_McuBubby_contract() {
+fn cortex_m_register_names_match_mcu_buddy_contract() {
     assert_eq!(canonical_register_name("R15"), "pc");
     assert_eq!(canonical_register_name("R14"), "lr");
     assert_eq!(canonical_register_name("R13"), "sp");

@@ -1,8 +1,8 @@
 from types import SimpleNamespace
 
-from McuBubby.chip_matcher import match_chip_name
-from McuBubby.device_patch_manager import list_supported_targets, resolve_device_patch
-from McuBubby.tools.probe import connect_probe
+from McuBuddy.chip_matcher import match_chip_name
+from McuBuddy.device_patch_manager import list_supported_targets, resolve_device_patch
+from McuBuddy.tools.probe import connect_probe
 
 
 def test_match_chip_name_passes_through_unknown_name() -> None:

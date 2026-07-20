@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from McuBubby.tools.probe import read_rtt_log
+from McuBuddy.tools.probe import read_rtt_log
 
 
 class _BackendProbe:

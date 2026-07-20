@@ -6,13 +6,13 @@ from collections import deque
 
 import pytest
 
-import McuBubby.tools.configuration as configuration
-from McuBubby.backends.probe.base import ProbeCapability
-from McuBubby.backends.probe.probe_rs_backend import ProbeRsBackend
-from McuBubby.backends.probe.sidecar_client import SidecarProtocolError, SidecarRpcClient
-from McuBubby.session import create_probe_backend
-from McuBubby.session import SessionState
-from McuBubby.tools.configuration import configure_probe
+import McuBuddy.tools.configuration as configuration
+from McuBuddy.backends.probe.base import ProbeCapability
+from McuBuddy.backends.probe.probe_rs_backend import ProbeRsBackend
+from McuBuddy.backends.probe.sidecar_client import SidecarProtocolError, SidecarRpcClient
+from McuBuddy.session import create_probe_backend
+from McuBuddy.session import SessionState
+from McuBuddy.tools.configuration import configure_probe
 
 
 class _MemoryTransport:
@@ -39,7 +39,7 @@ def test_rpc_client_sends_versioned_request_and_returns_result() -> None:
     )
     client = SidecarRpcClient(transport)
 
-    result = client.call("hello", {"client": "McuBubby"})
+    result = client.call("hello", {"client": "McuBuddy"})
 
     assert result == {"protocol_version": 1}
     assert transport.requests == [
@@ -47,7 +47,7 @@ def test_rpc_client_sends_versioned_request_and_returns_result() -> None:
             "jsonrpc": "2.0",
             "id": 1,
             "method": "hello",
-            "params": {"client": "McuBubby"},
+            "params": {"client": "McuBuddy"},
         }
     ]
 
@@ -127,7 +127,7 @@ def test_probe_rs_backend_connects_and_tracks_session() -> None:
     assert result["status"] == "ok"
     assert result["session_id"] == "session-1"
     assert client.calls == [
-        ("hello", {"client": "McuBubby", "protocol_version": 1}),
+        ("hello", {"client": "McuBuddy", "protocol_version": 1}),
         ("connect", {"target": "STM32F103C8", "unique_id": "probe-7"}),
     ]
 
@@ -264,12 +264,12 @@ def test_configure_probe_records_probe_rs_sidecar_path() -> None:
     result = configure_probe(
         session,
         backend="probe-rs",
-        probe_rs_sidecar_path=r"E:\tools\McuBubby-probe-sidecar.exe",
+        probe_rs_sidecar_path=r"E:\tools\McuBuddy-probe-sidecar.exe",
     )
 
     assert result["status"] == "ok"
     assert session.config.probe.backend == "probe-rs"
-    assert session.config.probe.probe_rs_sidecar_path.endswith("McuBubby-probe-sidecar.exe")
+    assert session.config.probe.probe_rs_sidecar_path.endswith("McuBuddy-probe-sidecar.exe")
     assert isinstance(session.probe, ProbeRsBackend)
 
 

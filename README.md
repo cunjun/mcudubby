@@ -1,5 +1,7 @@
 # McuBuddy
 
+<!-- mcp-name: io.github.cunjun/mcubuddy -->
+
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![MCP](https://img.shields.io/badge/MCP-server-8A2BE2)](https://modelcontextprotocol.io/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)

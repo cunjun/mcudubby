@@ -7,7 +7,7 @@ from .session import SessionState
 
 
 def create_server(session: SessionState | None = None) -> FastMCP:
-    app = FastMCP("McuBubby")
+    app = FastMCP("McuBuddy")
     register_all_tools(app, session or SessionState())
     return app
 

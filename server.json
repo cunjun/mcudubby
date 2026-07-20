@@ -1,0 +1,21 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.cunjun/mcubuddy",
+  "title": "McuBuddy",
+  "description": "AI-native MCU debugging and observability through probes, symbols, RTOS, logs, and build tools.",
+  "repository": {
+    "url": "https://github.com/cunjun/McuBuddy",
+    "source": "github"
+  },
+  "version": "0.5.1",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "McuBuddy",
+      "version": "0.5.1",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

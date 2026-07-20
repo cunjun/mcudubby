@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.1 - 2026-07-20
+
+### Changed
+- Standardized the project, Python package, command, documentation, and Rust sidecar branding as
+  `McuBuddy`.
+- Added PyPI ownership metadata and `server.json` for publishing McuBuddy to the official MCP
+  Registry.
+- Excluded local build caches from source distributions and added registry metadata validation.
+
 ## 0.5.0 - 2026-07-17
 
 ### Changed
@@ -18,7 +27,7 @@
 ## 0.4.0 - 2026-07-11
 
 ### Released
-- Published the initial `McuBubby` v0.4.0 release.
+- Published the initial `McuBuddy` v0.4.0 release.
 
 ## 0.2.0 - 2026-04-01
 

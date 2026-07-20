@@ -863,7 +863,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "McuBubby-probe-sidecar"
+name = "McuBuddy-probe-sidecar"
 version = "0.1.0"
 dependencies = [
  "base64",

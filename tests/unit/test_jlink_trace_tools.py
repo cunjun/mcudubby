@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-import McuBubby.backends.probe.jlink_backend as jlink_backend
-from McuBubby.tools.probe import read_cycle_counter, read_itm_trace, read_swo_log
+import McuBuddy.backends.probe.jlink_backend as jlink_backend
+from McuBuddy.tools.probe import read_cycle_counter, read_itm_trace, read_swo_log
 
 
 class _FakeJLink:

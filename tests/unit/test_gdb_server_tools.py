@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from McuBubby.gdb_server import GdbServerRuntime
-import McuBubby.tools.gdb_server as gdb_server_tools
-from McuBubby.tools.gdb_server import (
+from McuBuddy.gdb_server import GdbServerRuntime
+import McuBuddy.tools.gdb_server as gdb_server_tools
+from McuBuddy.tools.gdb_server import (
     get_gdb_server_status,
     get_jlink_gdb_server_status,
     start_gdb_server,
@@ -304,8 +304,8 @@ def test_runtime_start_jlink_builds_expected_command(monkeypatch, tmp_path) -> N
     monkeypatch.setattr(
         gdb_server_tools, "_resolve_jlink_gdb_server_path", lambda exe_path=None: exe_path
     )
-    monkeypatch.setattr("McuBubby.gdb_server.subprocess.Popen", _PopenFake)
-    monkeypatch.setattr("McuBubby.gdb_server.time.sleep", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("McuBuddy.gdb_server.subprocess.Popen", _PopenFake)
+    monkeypatch.setattr("McuBuddy.gdb_server.time.sleep", lambda *_args, **_kwargs: None)
 
     runtime = GdbServerRuntime()
     exe_path = str(tmp_path / "JLinkGDBServerCL.exe")
