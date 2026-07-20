@@ -1,10 +1,10 @@
-class McudubbyError(Exception):
-    """Base exception for mcudubby."""
+class McuBubbyError(Exception):
+    """Base exception for McuBubby."""
 
 
-class ConfigurationError(McudubbyError):
+class ConfigurationError(McuBubbyError):
     """Raised when required configuration is missing."""
 
 
-class BackendUnavailableError(McudubbyError):
+class BackendUnavailableError(McuBubbyError):
     """Raised when an optional hardware backend is unavailable."""

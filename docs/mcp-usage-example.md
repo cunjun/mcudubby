@@ -1,6 +1,6 @@
 # MCP Usage Example
 
-This document shows a compact `mcudubby` MCP session after the server has already been registered
+This document shows a compact `McuBubby` MCP session after the server has already been registered
 in an MCP client. For installation and client configuration, use [Quickstart](quickstart.md) and
 [Windows MCP Config Example](windows-mcp-config-example.md).
 

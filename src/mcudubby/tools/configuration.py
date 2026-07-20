@@ -12,7 +12,7 @@ from ..session import SessionState, create_probe_backend
 def get_runtime_config(session: SessionState) -> dict:
     return {
         "status": "ok",
-        "summary": "Loaded current mcudubby runtime configuration.",
+        "summary": "Loaded current McuBubby runtime configuration.",
         "config": session.config.model_dump(),
     }
 

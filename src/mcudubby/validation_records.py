@@ -16,7 +16,7 @@ def list_validation_records() -> dict[str, Any]:
 
 
 def _load_records() -> list[dict[str, Any]]:
-    validation_dir = resources.files("mcudubby.validation")
+    validation_dir = resources.files("McuBubby.validation")
     records: list[dict[str, Any]] = []
     for path in sorted(validation_dir.iterdir(), key=lambda item: item.name):
         if path.suffix != ".json":

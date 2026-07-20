@@ -5,7 +5,7 @@ from __future__ import annotations
 import struct
 from unittest.mock import MagicMock
 
-from mcudubby.tools.phase3 import diagnose_stack_overflow
+from McuBubby.tools.phase3 import diagnose_stack_overflow
 
 _CORTEX_M_SCS = 0xE000E000  # used by _probe_is_connected
 _VTOR_ADDR = 0xE000ED08

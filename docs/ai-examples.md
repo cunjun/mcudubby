@@ -1,6 +1,6 @@
 # AI Examples
 
-This document shows concrete `mcudubby` workflows for common embedded-debug tasks.
+This document shows concrete `McuBubby` workflows for common embedded-debug tasks.
 
 The goal is not to list every tool. The goal is to show practical tool sequences, the important returned fields, and how an AI assistant should interpret the evidence.
 

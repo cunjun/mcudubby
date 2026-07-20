@@ -7,8 +7,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from mcudubby.svd_manager import SvdManager
-from mcudubby.tools.phase3 import diagnose_peripheral_stuck
+from McuBubby.svd_manager import SvdManager
+from McuBubby.tools.phase3 import diagnose_peripheral_stuck
 
 
 # ---------------------------------------------------------------------------

@@ -30,7 +30,7 @@ For pyOCD targets supplied by a CMSIS-Pack, verify the pack with pyOCD first:
 pyocd list --targets --pack C:\path\Vendor.Device.1.0.0.pack
 ```
 
-Use the exact target ID reported by pyOCD when configuring `mcudubby`.
+Use the exact target ID reported by pyOCD when configuring `McuBubby`.
 
 ## 2. Configure the probe
 
@@ -41,7 +41,7 @@ configure_probe(
     target="PY32F030X8",
     backend="pyocd",
     unique_id="LU_2022_8888",
-    pack_path=r"E:\work_code\mcudubby\packs\Puya.PY32F0xx_DFP.1.2.8.pack",
+    pack_path=r"E:\work_code\McuBubby\packs\Puya.PY32F0xx_DFP.1.2.8.pack",
     connect_attempts=[
         {"frequency": 100000, "connect_mode": "attach"},
         {"frequency": 100000, "connect_mode": "under-reset"},
@@ -51,7 +51,7 @@ configure_probe(
 
 Use `pack_paths=[...]` when more than one pack is needed. The paths are passed directly to
 pyOCD, so they can point anywhere on the local machine.
-For `PY32F030X8`, mcudubby can also auto-discover `Puya.PY32F0xx_DFP.*.pack` from a
+For `PY32F030X8`, McuBubby can also auto-discover `Puya.PY32F0xx_DFP.*.pack` from a
 local `packs/` directory.
 
 ## 3. Discover the Keil project and firmware image

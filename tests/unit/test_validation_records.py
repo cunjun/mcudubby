@@ -1,4 +1,4 @@
-from mcudubby.validation_records import list_validation_records
+from McuBubby.validation_records import list_validation_records
 
 
 def test_validation_records_are_machine_readable() -> None:

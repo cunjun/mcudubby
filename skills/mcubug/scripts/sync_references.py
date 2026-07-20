@@ -1,4 +1,4 @@
-"""Sync mcubug skill references from this mcudubby checkout."""
+"""Sync mcubug skill references from this McuBubby checkout."""
 
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ def main() -> int:
     parser.add_argument(
         "--repo",
         default=str(default_repo_root()),
-        help="Path to the mcudubby repository checkout.",
+        help="Path to the McuBubby repository checkout.",
     )
     parser.add_argument(
         "--skill",

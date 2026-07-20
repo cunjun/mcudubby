@@ -1,6 +1,6 @@
 # AI Playbook
 
-This document is a short operational guide for AI assistants using `mcudubby`.
+This document is a short operational guide for AI assistants using `McuBubby`.
 
 Use it to decide:
 
@@ -9,7 +9,7 @@ Use it to decide:
 - how to combine probe, ELF, SVD, RTT, RTOS, and diagnosis flows
 - when to stop collecting evidence and start reasoning
 
-`mcudubby` is a structured evidence collector.  
+`McuBubby` is a structured evidence collector.  
 The AI is responsible for interpretation, prioritization, and next-step decisions.
 
 ---

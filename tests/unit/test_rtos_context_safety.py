@@ -1,7 +1,7 @@
 import importlib
 
-from mcudubby.session import SessionState
-from mcudubby.tools.probe import rtos_switch_context
+from McuBubby.session import SessionState
+from McuBubby.tools.probe import rtos_switch_context
 
 
 class _RecordingProbe:
@@ -29,7 +29,7 @@ def test_rtos_switch_context_requires_confirmation_before_writing_target() -> No
 def test_rtos_switch_context_reports_unsupported_without_register_write_capability(
     monkeypatch,
 ) -> None:
-    rtos_context_module = importlib.import_module("mcudubby.tools.probe.rtos_context")
+    rtos_context_module = importlib.import_module("McuBubby.tools.probe.rtos_context")
     monkeypatch.setattr(
         rtos_context_module,
         "rtos_task_context",

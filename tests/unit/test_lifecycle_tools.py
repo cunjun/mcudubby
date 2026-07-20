@@ -1,7 +1,7 @@
-from mcudubby.session import SessionState
-from mcudubby.tools.lifecycle import disconnect_all
-from mcudubby.tools.logs import disconnect_log
-from mcudubby.tools.probe import disconnect_probe
+from McuBubby.session import SessionState
+from McuBubby.tools.lifecycle import disconnect_all
+from McuBubby.tools.logs import disconnect_log
+from McuBubby.tools.probe import disconnect_probe
 
 
 class _FakeDisconnectable:

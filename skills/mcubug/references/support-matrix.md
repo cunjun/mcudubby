@@ -2,7 +2,7 @@
 
 This document summarizes what is implemented, what is hardware-validated, and where the current limits remain.
 
-Machine-readable validation records live under `src/mcudubby/validation/` and are exposed through
+Machine-readable validation records live under `src/McuBubby/validation/` and are exposed through
 `list_validation_records()`. Use those JSON files as the canonical evidence records, and keep this
 page as the human-readable summary.
 
@@ -32,7 +32,7 @@ release binaries are not yet part of this path.
 
 ### ATK_PICTURE / STM32L496VETx / ST-Link
 
-Record: `src/mcudubby/validation/stm32l496vetx-pyocd-stlink.json`
+Record: `src/McuBubby/validation/stm32l496vetx-pyocd-stlink.json`
 
 Validated:
 
@@ -57,7 +57,7 @@ Validated FreeRTOS synchronization patterns:
 
 ### Custom board / STM32F103C8 / J-Link
 
-Record: `src/mcudubby/validation/stm32f103c8-jlink.json`
+Record: `src/McuBubby/validation/stm32f103c8-jlink.json`
 
 Validated:
 

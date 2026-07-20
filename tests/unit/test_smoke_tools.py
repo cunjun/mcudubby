@@ -1,5 +1,5 @@
-from mcudubby.session import SessionState
-from mcudubby.tools.smoke import board_smoke_test, doctor, first_contact
+from McuBubby.session import SessionState
+from McuBubby.tools.smoke import board_smoke_test, doctor, first_contact
 
 
 class _Probe:

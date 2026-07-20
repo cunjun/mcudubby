@@ -58,7 +58,7 @@ class GdbServerRuntime:
         workdir = (
             Path(cwd) if cwd else (Path(elf_path).resolve().parent if elf_path else Path.cwd())
         )
-        log_path = Path(tempfile.gettempdir()) / f"mcudubby_gdbserver_{port}.log"
+        log_path = Path(tempfile.gettempdir()) / f"McuBubby_gdbserver_{port}.log"
         log_path.parent.mkdir(parents=True, exist_ok=True)
         log_handle = log_path.open("w", encoding="utf-8", errors="replace")
 
@@ -173,7 +173,7 @@ class GdbServerRuntime:
 
         host = "127.0.0.1"
         workdir = Path(cwd) if cwd else Path(exe_path).resolve().parent
-        log_path = Path(tempfile.gettempdir()) / f"mcudubby_jlink_gdbserver_{port}.log"
+        log_path = Path(tempfile.gettempdir()) / f"McuBubby_jlink_gdbserver_{port}.log"
         log_path.parent.mkdir(parents=True, exist_ok=True)
         log_handle = log_path.open("w", encoding="utf-8", errors="replace")
 

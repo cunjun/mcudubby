@@ -1,6 +1,6 @@
 # Tool Reference
 
-This page is the canonical grouped index for the public `mcudubby` MCP tools. Keep short
+This page is the canonical grouped index for the public `McuBubby` MCP tools. Keep short
 workflow examples in [Quickstart](quickstart.md), scenario guidance in [AI Playbook](ai-playbook.md),
 and capability status in [Support Matrix](support-matrix.md).
 
