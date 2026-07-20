@@ -1,4 +1,4 @@
-from mcudubby.result import make_result, safety_info
+from McuBubby.result import make_result, safety_info
 
 
 def test_make_result_adds_standard_ai_fields() -> None:

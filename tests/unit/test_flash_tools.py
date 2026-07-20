@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from mcudubby.backends.probe.pyocd_backend import PyOcdProbeBackend
-from mcudubby.tools.probe import erase_flash, program_flash, verify_flash
+from McuBubby.backends.probe.pyocd_backend import PyOcdProbeBackend
+from McuBubby.tools.probe import erase_flash, program_flash, verify_flash
 
 
 class _FakeFlash:

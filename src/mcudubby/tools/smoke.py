@@ -292,5 +292,5 @@ def _package_status(package: str) -> dict[str, Any]:
 
 def _doctor_summary(warnings: list[str]) -> str:
     if not warnings:
-        return "mcudubby doctor found the runtime, dependencies, probe discovery path, and configuration ready for first contact."
-    return "mcudubby doctor found issues: " + "; ".join(warnings) + "."
+        return "McuBubby doctor found the runtime, dependencies, probe discovery path, and configuration ready for first contact."
+    return "McuBubby doctor found issues: " + "; ".join(warnings) + "."

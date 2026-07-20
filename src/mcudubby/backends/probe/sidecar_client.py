@@ -25,8 +25,8 @@ class LineTransport(Protocol):
 
 
 def resolve_sidecar_path(configured_path: str | None = None) -> str:
-    candidates = [configured_path, os.environ.get("MCUDUBBY_PROBE_SIDECAR")]
-    binary_name = "mcudubby-probe-sidecar.exe" if os.name == "nt" else "mcudubby-probe-sidecar"
+    candidates = [configured_path, os.environ.get("McuBubby_PROBE_SIDECAR")]
+    binary_name = "McuBubby-probe-sidecar.exe" if os.name == "nt" else "McuBubby-probe-sidecar"
     candidates.append(str(Path(__file__).resolve().parent / "bin" / binary_name))
     candidates.append(shutil.which(binary_name))
     for candidate in candidates:
@@ -34,7 +34,7 @@ def resolve_sidecar_path(configured_path: str | None = None) -> str:
             return str(Path(candidate).resolve())
     raise BackendUnavailableError(
         "probe-rs sidecar not found; configure probe_rs_sidecar_path or "
-        "MCUDUBBY_PROBE_SIDECAR."
+        "McuBubby_PROBE_SIDECAR."
     )
 
 

@@ -14,7 +14,7 @@ separate four layers:
 
 ## What This Case Taught Us
 
-In the STM32F429 + I2C2 + MS35229 stepper case, mcudubby proved:
+In the STM32F429 + I2C2 + MS35229 stepper case, McuBubby proved:
 
 - the motion API was reached with the expected argument
 - I2C2 communication was healthy
@@ -110,7 +110,7 @@ short until output behavior is understood.
 - Stop or sleep the driver after a halted breakpoint if the target was paused before a stop command.
 - Record exact register values and pin levels in the final diagnosis.
 
-## Useful mcudubby Improvements
+## Useful McuBubby Improvements
 
 The current manual workflow works, but these features would make actuator debugging faster:
 

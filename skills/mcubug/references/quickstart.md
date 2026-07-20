@@ -1,12 +1,12 @@
 # Quickstart
 
-This guide shows the shortest path from an installed `mcudubby` server to the first real-board
+This guide shows the shortest path from an installed `McuBubby` server to the first real-board
 debug session.
 
 ## 1. Install
 
 ```bash
-pip install mcudubby
+pip install McuBubby
 ```
 
 From a local checkout:
@@ -28,9 +28,9 @@ For Claude Desktop / Claude Code:
 ```json
 {
   "mcpServers": {
-    "mcudubby": {
+    "McuBubby": {
       "command": "python",
-      "args": ["-m", "mcudubby"]
+      "args": ["-m", "McuBubby"]
     }
   }
 }
@@ -60,7 +60,7 @@ configure_probe(
     target="PY32F030X8",
     backend="pyocd",
     unique_id="LU_2022_8888",
-    pack_path=r"E:\work_code\mcudubby\packs\Puya.PY32F0xx_DFP.1.2.8.pack",
+    pack_path=r"E:\work_code\McuBubby\packs\Puya.PY32F0xx_DFP.1.2.8.pack",
     connect_attempts=[
         {"frequency": 100000, "connect_mode": "attach"},
         {"frequency": 100000, "connect_mode": "under-reset"},
@@ -68,7 +68,7 @@ configure_probe(
 )
 ```
 
-When the Puya pack is stored under a local `packs/` directory, mcudubby can auto-discover it
+When the Puya pack is stored under a local `packs/` directory, McuBubby can auto-discover it
 for `PY32F030X8`.
 
 For built-in pyOCD targets, `pack_path` is optional:

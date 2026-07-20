@@ -29,7 +29,7 @@ class ProbeRsBackend(ProbeBackend):
             self._client = SidecarRpcClient.start(self._sidecar_path)
         if not self._handshake_complete:
             hello = self._client.call(
-                "hello", {"client": "mcudubby", "protocol_version": 1}
+                "hello", {"client": "McuBubby", "protocol_version": 1}
             )
             if hello.get("protocol_version") != 1:
                 raise RuntimeError("probe-rs sidecar protocol version is incompatible")

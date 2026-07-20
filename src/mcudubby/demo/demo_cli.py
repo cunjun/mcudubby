@@ -46,7 +46,7 @@ class _R0CounterProbe(MockProbeBackend):
 def run_demo() -> None:
     session = MockSessionState()
 
-    print("== mcudubby mock demo ==")
+    print("== McuBubby mock demo ==")
     print()
     print("User: This STM32L4 board doesn't boot after power-on. Help me inspect it.")
     print()

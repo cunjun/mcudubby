@@ -1,9 +1,9 @@
 import subprocess
 from pathlib import Path
 
-from mcudubby.config import BuildConfig, ElfConfig
-from mcudubby.session import SessionState
-from mcudubby.tools.build import build_project, flash_firmware
+from McuBubby.config import BuildConfig, ElfConfig
+from McuBubby.session import SessionState
+from McuBubby.tools.build import build_project, flash_firmware
 
 
 class _FakeBuildRuntime:
@@ -73,7 +73,7 @@ def test_flash_firmware_uses_runtime_config_when_confirmed() -> None:
 
 
 def test_keil_build_runtime_collects_firmware_info(tmp_path: Path) -> None:
-    from mcudubby.build_runtime import KeilBuildRuntime
+    from McuBubby.build_runtime import KeilBuildRuntime
 
     axf = tmp_path / "demo.axf"
     axf.write_bytes(b"demo")
@@ -89,7 +89,7 @@ def test_keil_build_runtime_collects_firmware_info(tmp_path: Path) -> None:
 
 
 def test_keil_build_runtime_resolves_log_path_to_existing_output_dir(tmp_path: Path) -> None:
-    from mcudubby.build_runtime import KeilBuildRuntime
+    from McuBubby.build_runtime import KeilBuildRuntime
 
     project_dir = tmp_path / "MDK-ARM"
     objects_dir = project_dir / "Objects"
@@ -97,13 +97,13 @@ def test_keil_build_runtime_resolves_log_path_to_existing_output_dir(tmp_path: P
     project_path = project_dir / "Demo.uvprojx"
     project_path.write_text("<Project />", encoding="utf-8")
 
-    log_path = KeilBuildRuntime._resolve_log_path(None, project_path, "mcudubby_build.log")
+    log_path = KeilBuildRuntime._resolve_log_path(None, project_path, "McuBubby_build.log")
 
-    assert log_path == objects_dir / "mcudubby_build.log"
+    assert log_path == objects_dir / "McuBubby_build.log"
 
 
 def test_keil_build_runtime_creates_configured_log_parent(tmp_path: Path) -> None:
-    from mcudubby.build_runtime import KeilBuildRuntime
+    from McuBubby.build_runtime import KeilBuildRuntime
 
     project_path = tmp_path / "MDK-ARM" / "Demo.uvprojx"
     project_path.parent.mkdir()
@@ -113,7 +113,7 @@ def test_keil_build_runtime_creates_configured_log_parent(tmp_path: Path) -> Non
     log_path = KeilBuildRuntime._resolve_log_path(
         str(configured_log),
         project_path,
-        "mcudubby_build.log",
+        "McuBubby_build.log",
     )
 
     assert log_path == configured_log
@@ -124,7 +124,7 @@ def test_keil_build_rejects_stale_success_log_when_command_fails(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-    from mcudubby.build_runtime import KeilBuildRuntime
+    from McuBubby.build_runtime import KeilBuildRuntime
 
     build, elf = _keil_runtime_config(tmp_path, "build.log")
     log_path = Path(build.build_log_path or "")
@@ -145,7 +145,7 @@ def test_keil_flash_rejects_stale_success_log_when_command_fails(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-    from mcudubby.build_runtime import KeilBuildRuntime
+    from McuBubby.build_runtime import KeilBuildRuntime
 
     build, elf = _keil_runtime_config(tmp_path, "flash.log")
     log_path = Path(build.flash_log_path or "")
@@ -166,7 +166,7 @@ def test_keil_build_accepts_success_markers_from_fresh_log(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-    from mcudubby.build_runtime import KeilBuildRuntime
+    from McuBubby.build_runtime import KeilBuildRuntime
 
     build, elf = _keil_runtime_config(tmp_path, "build.log")
 
@@ -185,7 +185,7 @@ def test_keil_flash_accepts_success_markers_from_fresh_log(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
-    from mcudubby.build_runtime import KeilBuildRuntime
+    from McuBubby.build_runtime import KeilBuildRuntime
 
     build, elf = _keil_runtime_config(tmp_path, "flash.log")
 

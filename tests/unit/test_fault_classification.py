@@ -1,4 +1,4 @@
-from mcudubby.tools.diagnose import _classify_fault, _infer_stage_from_logs
+from McuBubby.tools.diagnose import _classify_fault, _infer_stage_from_logs
 
 
 def test_precise_data_bus_fault_classification() -> None:

@@ -1,19 +1,19 @@
 # mcubug Skill For Codex And CC
 
 This repository includes an assistant skill at `skills/mcubug`. The skill teaches Codex and
-Claude Code (CC) how to use `mcudubby` as an evidence-first embedded board debugging workflow
+Claude Code (CC) how to use `McuBubby` as an evidence-first embedded board debugging workflow
 instead of treating the MCP tools as an unstructured command catalog.
 
 Local source path from this checkout:
 
 ```text
-E:\work_code\mcudubby\skills\mcubug
+E:\work_code\McuBubby\skills\mcubug
 ```
 
 Local file link:
 
 ```text
-file:///E:/work_code/mcudubby/skills/mcubug/SKILL.md
+file:///E:/work_code/McuBubby/skills/mcubug/SKILL.md
 ```
 
 ## What The Skill Contains

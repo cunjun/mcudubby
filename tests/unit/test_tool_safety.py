@@ -2,23 +2,23 @@ import asyncio
 import ast
 from pathlib import Path
 
-from mcudubby.backends.probe.base import ProbeCapability
-from mcudubby.server import create_server
-from mcudubby.session import SessionState
-from mcudubby.tool_safety import (
+from McuBubby.backends.probe.base import ProbeCapability
+from McuBubby.server import create_server
+from McuBubby.session import SessionState
+from McuBubby.tool_safety import (
     TOOL_SAFETY,
     get_tool_safety,
     list_tool_safety,
     require_tool_confirmation,
 )
-from mcudubby.tools.probe import (
+from McuBubby.tools.probe import (
     read_mpu_regions,
     set_breakpoint,
     set_watchpoint,
     write_memory,
     write_symbol_value,
 )
-from mcudubby.tools.svd import svd_write_register
+from McuBubby.tools.svd import svd_write_register
 
 
 class _RecordingProbe:
@@ -109,7 +109,7 @@ def test_tool_policy_exposes_execution_mode_from_same_registry() -> None:
 
 
 def test_every_registered_mcp_tool_has_safety_metadata() -> None:
-    mcp_tools_dir = Path(__file__).parents[2] / "src" / "mcudubby" / "mcp_tools"
+    mcp_tools_dir = Path(__file__).parents[2] / "src" / "McuBubby" / "mcp_tools"
     registered_tools: set[str] = set()
     for path in mcp_tools_dir.rglob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"))
@@ -121,7 +121,7 @@ def test_every_registered_mcp_tool_has_safety_metadata() -> None:
 
 
 def test_every_confirmation_required_mcp_tool_exposes_confirm_parameter() -> None:
-    mcp_tools_dir = Path(__file__).parents[2] / "src" / "mcudubby" / "mcp_tools"
+    mcp_tools_dir = Path(__file__).parents[2] / "src" / "McuBubby" / "mcp_tools"
     tool_parameters: dict[str, set[str]] = {}
     for path in mcp_tools_dir.rglob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"))

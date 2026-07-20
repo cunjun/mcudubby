@@ -1,10 +1,10 @@
-from mcudubby.session import SessionState
-from mcudubby.tools.probe import clear_all_breakpoints
-from mcudubby.tools.probe import clear_breakpoint
-from mcudubby.tools.probe import continue_target
-from mcudubby.tools.probe import read_stopped_context
-from mcudubby.tools.probe import set_breakpoint
-from mcudubby.tools.probe import set_breakpoints_for_function_range
+from McuBubby.session import SessionState
+from McuBubby.tools.probe import clear_all_breakpoints
+from McuBubby.tools.probe import clear_breakpoint
+from McuBubby.tools.probe import continue_target
+from McuBubby.tools.probe import read_stopped_context
+from McuBubby.tools.probe import set_breakpoint
+from McuBubby.tools.probe import set_breakpoints_for_function_range
 
 
 class _FakeBreakpointProbe:

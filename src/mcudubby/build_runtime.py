@@ -20,7 +20,7 @@ class KeilBuildRuntime:
         uv4_path = self._require_path(build.uv4_path, "build.uv4_path")
         project_path = self._require_path(build.project_path, "build.project_path")
         target_name = self._require_value(build.target_name, "build.target_name")
-        log_path = self._resolve_log_path(build.build_log_path, project_path, "mcudubby_build.log")
+        log_path = self._resolve_log_path(build.build_log_path, project_path, "McuBubby_build.log")
 
         command = [
             str(uv4_path),
@@ -59,7 +59,7 @@ class KeilBuildRuntime:
         uv4_path = self._require_path(build.uv4_path, "build.uv4_path")
         project_path = self._require_path(build.project_path, "build.project_path")
         target_name = self._require_value(build.target_name, "build.target_name")
-        log_path = self._resolve_log_path(build.flash_log_path, project_path, "mcudubby_flash.log")
+        log_path = self._resolve_log_path(build.flash_log_path, project_path, "McuBubby_flash.log")
 
         command = [
             str(uv4_path),

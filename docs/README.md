@@ -1,6 +1,6 @@
-# mcudubby Docs
+# McuBubby Docs
 
-This directory contains the working documentation for `mcudubby`. The top-level README files are
+This directory contains the working documentation for `McuBubby`. The top-level README files are
 short product entry points; detailed setup, workflows, examples, validation, and tool indexes live
 here.
 

@@ -1,5 +1,5 @@
 [package]
-name = "mcudubby-probe-sidecar"
+name = "McuBubby-probe-sidecar"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
@@ -12,9 +12,9 @@ serde_json = "1"
 uuid = { version = "1", features = ["v4"] }
 
 [lib]
-name = "mcudubby_probe_sidecar"
+name = "McuBubby_probe_sidecar"
 path = "src/lib.rs"
 
 [[bin]]
-name = "mcudubby-probe-sidecar"
+name = "McuBubby-probe-sidecar"
 path = "src/main.rs"

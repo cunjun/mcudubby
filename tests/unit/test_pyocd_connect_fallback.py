@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-import mcudubby.backends.probe.pyocd_backend as pyocd_backend
+import McuBubby.backends.probe.pyocd_backend as pyocd_backend
 
 
 class _FakeSession:

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-import mcudubby.tools.diagnose_router as diagnose_router
-from mcudubby.tools.diagnose_router import DIAGNOSE_ROUTES
+import McuBubby.tools.diagnose_router as diagnose_router
+from McuBubby.tools.diagnose_router import DIAGNOSE_ROUTES
 
 
 def test_diagnose_routes_are_data_driven() -> None:

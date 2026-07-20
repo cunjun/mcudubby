@@ -1,6 +1,6 @@
 # Board Validation Guide
 
-This document is a practical checklist for validating `mcudubby` features on a real board.
+This document is a practical checklist for validating `McuBubby` features on a real board.
 
 Use it after:
 

@@ -52,7 +52,7 @@ def register_runtime_tools(mcp, session: SessionState) -> None:
 
     @mcp.tool()
     async def list_tool_safety() -> dict:
-        """List safety levels for public mcudubby tools."""
+        """List safety levels for public McuBubby tools."""
         return _list_tool_safety()
 
     @mcp.tool()

@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 
-from mcudubby.demo.mock_session import MockSessionState
-from mcudubby.tools.diagnose import diagnose_hardfault, diagnose_startup_failure
+from McuBubby.demo.mock_session import MockSessionState
+from McuBubby.tools.diagnose import diagnose_hardfault, diagnose_startup_failure
 
 
 def test_mock_startup_failure_contains_sensor_stage() -> None:

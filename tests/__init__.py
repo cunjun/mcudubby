@@ -1,1 +1,1 @@
-"""Test package for mcudubby."""
+"""Test package for McuBubby."""
