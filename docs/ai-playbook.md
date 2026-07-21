@@ -27,7 +27,7 @@ Prefer:
 
 - non-destructive reads before writes
 - direct evidence before speculation
-- built-in diagnosis tools before manual low-level probing
+- core evidence collectors before full-profile diagnosis tools
 - real hardware evidence over assumptions
 
 ---
@@ -40,21 +40,22 @@ When the user reports a board problem and does not specify a tool sequence:
 2. `configure_probe(...)`
 3. `probe_connect(...)`
 4. `probe_halt()` or `probe_reset(halt=True)`
-5. `read_stopped_context()`
-6. If the symptom is broad, call `diagnose(...)`
+5. `read_stopped_context()` or the relevant evidence package
+6. If the symptom is broad, collect facts first with the core evidence tools
 7. If symbols are available, call `elf_load(...)`
 8. If peripheral state matters, call `svd_load(...)`
 9. If RTOS or logs matter, inspect `read_rtt_log()` and `list_rtos_tasks()`
 
 Use this as the default decision tree:
 
-- boot failure: `diagnose("board won't boot")`
-- crash/hardfault: `diagnose_hardfault()`
-- silent peripheral: `diagnose_peripheral_stuck(...)`
+- boot failure: `collect_startup_evidence(...)`
+- crash/hardfault: `collect_crash_evidence(...)`
+- silent peripheral: `collect_peripheral_evidence(...)`
 - actuator does not move after a command: follow
   [Peripheral Actuator Debug Playbook](peripheral-actuator-debug-playbook.md)
-- RTOS stall: `list_rtos_tasks()` -> `rtos_task_context(...)`
-- suspicious code path: `run_to_function()` / `run_to_source()` / `source_step()`
+- RTOS stall: `collect_rtos_evidence(...)` -> `rtos_task_context(...)`
+- suspicious code path: switch to `MCUBUDDY_TOOL_PROFILE=full`, then use
+  `run_to_function()` / `run_to_source()` / `source_step()`
 
 ---
 

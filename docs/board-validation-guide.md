@@ -56,6 +56,10 @@ Good examples:
 
 ## 3. Recommended Validation Sequence
 
+Run the sequence once with the default `core` profile. Repeat with
+`MCUBUDDY_TOOL_PROFILE=full` when validating expert-only tools or comparing model tool selection.
+Record the active profile in every validation note.
+
 ### A. Attach and stop-state sanity check
 
 1. `list_connected_probes()`
@@ -110,6 +114,20 @@ Expected evidence:
 - task names are readable
 - blocked tasks resolve to meaningful wait functions
 - stack usage data is plausible
+
+### F. Core evidence package validation
+
+1. `collect_startup_evidence(...)`
+2. `collect_crash_evidence(...)` when the firmware is in a fault or halted failure state
+3. `collect_peripheral_evidence(peripheral="...")`
+4. `collect_rtos_evidence(...)`
+
+Expected evidence:
+
+- unavailable prerequisites are explicit
+- partial observations do not fail the whole package
+- summaries describe collection completeness, not unproven root cause
+- hidden full-profile tools are not called from a core-profile session
 
 ### E. Flash validation
 
@@ -176,6 +194,7 @@ After every meaningful validation round:
 2. update `README.md` if public capability claims changed
 3. update `README_CN.md` if the public Chinese summary changed
 4. update `docs/support-matrix.md` if implementation or validation scope changed
+5. update GPT-5.6 scenario notes if the run is part of a tool-surface comparison
 
 ## 7. Suggested Validation Snapshots
 

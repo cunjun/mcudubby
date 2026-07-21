@@ -1,30 +1,38 @@
-# McuBuddy v0.5.1
+# McuBuddy v0.6.0
 
-`McuBuddy` v0.5.1 整合 McuBuddy 命名、PyPI 所有权元数据和 MCP Registry 发布配置，并保留 0.5.0 的并发、安全及构建可靠性改进。
+McuBuddy v0.6.0 changes the default MCP tool surface from the full alpha catalog to a smaller
+`core` profile. This is an intentional breaking default-behavior change before 1.0: common
+bring-up, crash evidence, peripheral inspection, RTOS inspection, logging, build, flash, and verify
+flows remain available by default, while expert/debugger-control tools require explicit opt-in.
 
-## 本版本包含
+## Highlights
 
-- 阻塞式 MCP 工具转移到工作线程，避免探针调用阻塞事件循环。
-- 同一会话的硬件操作串行化，不同会话仍可并行执行。
-- Keil 构建和烧录同时校验进程返回码与本次生成的日志，避免旧日志误报成功。
-- smoke/first-contact 工具按实际行为标记为会改变目标执行状态。
-- pyOCD GDB server 远程绑定新增显式确认，默认继续仅监听本机。
-- MCP 工具的安全等级、确认要求和执行模式统一集中管理，DWT/SWO 启用及会改变目标状态的诊断命令均受一致策略约束。
-- 探针重新配置改为事务式更新，无效连接参数不会替换当前后端或留下半更新配置。
-- CI 新增 Windows、Rust sidecar、脚本 lint 和 skill 参考文档漂移检查。
-- GitHub Release 自动构建并附加 wheel 与源码包。
+- Default startup now exposes the fixed `core` tool set.
+- Set `MCUBUDDY_TOOL_PROFILE=full` to expose the complete legacy tool catalog.
+- Added structured evidence entry points:
+  `collect_crash_evidence`, `collect_startup_evidence`, `collect_peripheral_evidence`, and
+  `collect_rtos_evidence`.
+- `list_tool_safety(include_hidden=false)` now reports `active_profile` and only lists visible
+  tools by default. Use `include_hidden=true` to inspect metadata for the full catalog without
+  changing the current MCP session.
 
-## 安装
+## Migration
 
-```bash
-pip install McuBuddy
+For an existing MCP config that needs the old full catalog:
+
+```json
+{
+  "mcpServers": {
+    "McuBuddy": {
+      "command": "python",
+      "args": ["-m", "McuBuddy"],
+      "env": {
+        "MCUBUDDY_TOOL_PROFILE": "full"
+      }
+    }
+  }
+}
 ```
 
-也可以从本 Release 下载附件安装：
-
-- `McuBuddy-0.5.1-py3-none-any.whl`
-- `McuBuddy-0.5.1.tar.gz`
-
-## 注意事项
-
-涉及真实硬件的功能依赖本机探针驱动、板卡接线、目标固件符号文件，以及可选后端依赖，例如 `pylink-square`。远程开放 GDB server 前请确认网络边界可信。
+`full` is not deprecated; it is the expert profile. Restart the MCP server after changing the
+profile, and disconnect probes or log channels before restarting if a board is attached.

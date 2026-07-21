@@ -23,6 +23,10 @@ pip install -e ".[dev]"
 
 ## 2. Configure MCP
 
+McuBuddy v0.6 starts in the `core` tool profile by default. This keeps the MCP schema small and
+focuses the model on bring-up, evidence collection, peripheral/RTOS/log inspection, and
+build/flash/verify loops.
+
 For Claude Desktop / Claude Code:
 
 ```json
@@ -38,6 +42,27 @@ For Claude Desktop / Claude Code:
 
 Use the virtual-environment Python path if your MCP client does not inherit the shell
 environment.
+
+To expose the full expert catalog from v0.5.x, opt in explicitly and restart the MCP server:
+
+```json
+{
+  "mcpServers": {
+    "McuBuddy": {
+      "command": "python",
+      "args": ["-m", "McuBuddy"],
+      "env": {
+        "MCUBUDDY_TOOL_PROFILE": "full"
+      }
+    }
+  }
+}
+```
+
+`full` is useful for low-level memory/register writes, advanced breakpoints, GDB server lifecycle,
+legacy high-level diagnosis, and experimental trace tools. Before changing profiles, disconnect
+active probes or log channels and restart the MCP server; the active profile cannot be expanded from
+inside an existing MCP session.
 
 ## 3. Discover hardware
 

@@ -61,6 +61,10 @@ TOOL_POLICIES: dict[str, dict[str, Any]] = {
     "list_demo_profiles": {"level": "read-only"},
     "list_tool_safety": {"level": "read-only"},
     "list_validation_records": {"level": "read-only"},
+    "collect_crash_evidence": {"level": "execution-changing"},
+    "collect_startup_evidence": {"level": "execution-changing"},
+    "collect_peripheral_evidence": {"level": "read-only"},
+    "collect_rtos_evidence": {"level": "read-only"},
     "discover_keil_projects": {"level": "read-only"},
     "elf_addr_to_source": {"level": "read-only"},
     "elf_list_functions": {"level": "read-only"},
@@ -188,10 +192,22 @@ def require_tool_confirmation(tool_name: str, confirmed: bool) -> dict[str, Any]
         "next_tools": ["list_tool_safety"],
     }
 
-def list_tool_safety() -> dict[str, Any]:
+def list_tool_safety(
+    *,
+    active_profile: str = "full",
+    enabled_tool_names: frozenset[str] | set[str] | None = None,
+    include_hidden: bool = False,
+) -> dict[str, Any]:
+    tool_names = (
+        set(TOOL_POLICIES)
+        if include_hidden or enabled_tool_names is None
+        else set(enabled_tool_names)
+    )
     return {
         "status": "ok",
-        "summary": f"Listed safety metadata for {len(TOOL_SAFETY)} tool(s).",
+        "summary": f"Listed safety metadata for {len(tool_names)} tool(s).",
+        "active_profile": active_profile,
+        "hidden_tools_included": include_hidden,
         "safety_levels": SAFETY_LEVELS,
-        "tools": {name: get_tool_safety(name) for name in sorted(TOOL_POLICIES)},
+        "tools": {name: get_tool_safety(name) for name in sorted(tool_names)},
     }

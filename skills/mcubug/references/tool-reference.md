@@ -4,6 +4,63 @@ This page is the canonical grouped index for the public `McuBuddy` MCP tools. Ke
 workflow examples in [Quickstart](quickstart.md), scenario guidance in [AI Playbook](ai-playbook.md),
 and capability status in [Support Matrix](support-matrix.md).
 
+## Tool Profiles
+
+McuBuddy v0.6 exposes the `core` profile by default. Set `MCUBUDDY_TOOL_PROFILE=full` at server
+startup to expose the complete expert catalog. The active profile is fixed for the lifetime of the
+MCP server process.
+
+Core tools:
+
+- `doctor`
+- `first_contact`
+- `list_tool_safety`
+- `list_validation_records`
+- `match_chip_name`
+- `get_target_info`
+- `list_connected_probes`
+- `configure_probe`
+- `configure_elf`
+- `elf_load`
+- `svd_load`
+- `probe_connect`
+- `disconnect_all`
+- `probe_halt`
+- `probe_resume`
+- `probe_reset`
+- `read_stopped_context`
+- `backtrace`
+- `collect_crash_evidence`
+- `collect_startup_evidence`
+- `collect_peripheral_evidence`
+- `collect_rtos_evidence`
+- `svd_read_peripheral`
+- `list_rtos_tasks`
+- `rtos_task_context`
+- `read_rtt_log`
+- `configure_log`
+- `log_connect`
+- `log_tail`
+- `discover_keil_projects`
+- `configure_keil_project`
+- `build_project`
+- `flash_firmware`
+- `compare_elf_to_flash`
+
+`list_tool_safety()` lists only tools visible in the active profile. Use
+`list_tool_safety(include_hidden=true)` to inspect metadata for the full catalog without changing
+the MCP exposure surface.
+
+## Evidence Packages
+
+- `collect_crash_evidence`
+- `collect_startup_evidence`
+- `collect_peripheral_evidence`
+- `collect_rtos_evidence`
+
+These tools return structured observations and missing prerequisites. They do not claim a root cause
+unless that fact is directly present in collected evidence.
+
 ## Configuration And Bring-Up
 
 Board bring-up helpers:

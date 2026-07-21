@@ -27,6 +27,9 @@ Replace this path with your local checkout path.
 
 ## Recommended Launch Commands
 
+The default launch uses the `core` tool profile. Add `MCUBUDDY_TOOL_PROFILE=full` only when you
+need the complete expert tool catalog.
+
 Windows Python environments vary, so these are the common choices:
 
 ```text
@@ -47,6 +50,23 @@ Python path when the MCP client does not inherit your shell environment.
       "command": "py",
       "args": ["-3", "-m", "McuBuddy"],
       "cwd": "E:\\work_code\\McuBuddy"
+    }
+  }
+}
+```
+
+## Full Expert Profile
+
+```json
+{
+  "mcpServers": {
+    "McuBuddy": {
+      "command": "python",
+      "args": ["-m", "McuBuddy"],
+      "cwd": "E:\\work_code\\McuBuddy",
+      "env": {
+        "MCUBUDDY_TOOL_PROFILE": "full"
+      }
     }
   }
 }

@@ -12,7 +12,7 @@ def test_registry_metadata_matches_pypi_distribution() -> None:
 
     assert f"mcp-name: {REGISTRY_NAME}" in readme
     assert metadata["name"] == REGISTRY_NAME
-    assert metadata["version"] == "0.5.1"
+    assert metadata["version"] == "0.6.0"
     assert metadata["repository"] == {
         "url": "https://github.com/cunjun/McuBuddy",
         "source": "github",
@@ -21,7 +21,7 @@ def test_registry_metadata_matches_pypi_distribution() -> None:
         {
             "registryType": "pypi",
             "identifier": "McuBuddy",
-            "version": "0.5.1",
+            "version": "0.6.0",
             "transport": {"type": "stdio"},
         }
     ]

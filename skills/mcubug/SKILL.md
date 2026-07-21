@@ -11,6 +11,9 @@ Use `McuBuddy` as a structured evidence collector for real embedded boards. Pref
 evidence over speculation, non-destructive reads before writes, and symptom-oriented diagnosis
 before manual low-level probing.
 
+McuBuddy v0.6 defaults to the `core` profile. Start with evidence collectors and only recommend
+`MCUBUDDY_TOOL_PROFILE=full` when the required capability is hidden from the current MCP session.
+
 ## Reference Selection
 
 Load only the reference needed for the current task:
@@ -37,8 +40,9 @@ When the user reports a board problem and has not specified commands:
 2. Configure the probe with `configure_probe(...)`.
 3. Connect or run a read-only check with `probe_connect(...)` or `board_smoke_test(...)`.
 4. Establish a known stop point with `probe_halt()` or `probe_reset(halt=True)`.
-5. Collect broad state with `read_stopped_context()`.
-6. Use `diagnose(...)` for broad symptoms.
+5. Collect broad state with `read_stopped_context()` or the relevant evidence package.
+6. Use `collect_crash_evidence(...)`, `collect_startup_evidence(...)`,
+   `collect_peripheral_evidence(...)`, or `collect_rtos_evidence(...)` for symptom-specific facts.
 7. Load `configure_elf(...)` / `elf_load(...)` when symbol or source evidence is available.
 8. Load `svd_load(...)` when peripheral or clock state matters.
 9. Inspect `read_rtt_log()`, `log_tail(...)`, `list_rtos_tasks()`, and `rtos_task_context(...)`
@@ -61,13 +65,13 @@ server sessions may execute in parallel, and stateless metadata queries may over
 
 | Symptom | Start With |
 | --- | --- |
-| Board will not boot | `diagnose("board won't boot")`, `diagnose_startup_failure(...)` |
-| HardFault or crash | `diagnose_hardfault()`, then `backtrace()` / `dwarf_backtrace()` |
-| UART/SPI/I2C/GPIO silent | `svd_load(...)`, `diagnose_peripheral_stuck(...)`, relevant `svd_read_peripheral(...)` |
+| Board will not boot | `collect_startup_evidence(...)`, then crash evidence if fault state is present |
+| HardFault or crash | `collect_crash_evidence(...)`, then `backtrace()` |
+| UART/SPI/I2C/GPIO silent | `svd_load(...)`, `collect_peripheral_evidence(...)`, `svd_read_peripheral(...)` |
 | Interrupt issue | `diagnose_interrupt_issue(...)`, NVIC state, handler symbols |
 | Memory corruption | `diagnose_memory_corruption(...)`, stack checks, snapshots, watchpoints |
 | Stack overflow | `diagnose_stack_overflow(...)`, `read_stack_usage()` |
-| FreeRTOS stall | `list_rtos_tasks()`, `rtos_task_context(...)`, `read_stack_usage()` |
+| FreeRTOS stall | `collect_rtos_evidence(...)`, then task context when a task is named |
 | Clock issue | `diagnose_clock_issue(...)`, RCC/clock SVD reads |
 | Need path proof | `run_to_function(...)`, `run_to_source(...)`, `source_step()`, `step_over()`, `step_out()` |
 | Actuator command ACKed but no motion/output | Use the actuator playbook evidence ladder |

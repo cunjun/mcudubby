@@ -51,9 +51,14 @@ def register_runtime_tools(mcp, session: SessionState) -> None:
         return _list_supported_targets(backend=backend)
 
     @mcp.tool()
-    async def list_tool_safety() -> dict:
+    async def list_tool_safety(include_hidden: bool = False) -> dict:
         """List safety levels for public McuBuddy tools."""
-        return _list_tool_safety()
+        profile = mcp.active_tool_profile
+        return _list_tool_safety(
+            active_profile=profile.name,
+            enabled_tool_names=profile.enabled_tool_names,
+            include_hidden=include_hidden,
+        )
 
     @mcp.tool()
     async def list_validation_records() -> dict:

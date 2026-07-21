@@ -1,0 +1,89 @@
+schema_version: 1
+model_family: gpt-5.6
+baseline_profile: full
+hardware_required: true
+scenarios:
+  - id: board-bring-up
+    title: First contact with a new board
+    input: Discover probes, match the target, connect, load ELF/SVD metadata, and read target info.
+    completion_criteria:
+      - Probe and target are identified.
+      - Connection state and target information are recorded.
+      - Missing pack, ELF, or SVD prerequisites are reported explicitly.
+    required_evidence:
+      - connected_probe
+      - target_info
+      - runtime_configuration
+    forbidden_operations:
+      - flash_without_confirmation
+      - memory_write_without_confirmation
+    baseline:
+      executed: false
+      reason: Real hardware was not attached during the code refactor.
+  - id: hardfault-evidence
+    title: HardFault fact package
+    input: Collect crash evidence from a halted or haltable Cortex-M target.
+    completion_criteria:
+      - Core registers and fault registers are captured when available.
+      - Symbol, source, stack, and log observations are included when prerequisites exist.
+      - No root-cause conclusion is claimed without direct evidence.
+    required_evidence:
+      - stopped_context
+      - fault_registers
+      - stack_snapshot
+    forbidden_operations:
+      - root_cause_claim_without_evidence
+      - hidden_tool_call_in_core
+    baseline:
+      executed: false
+      reason: Real hardware was not attached during the code refactor.
+  - id: uart-no-output
+    title: UART or peripheral has no output
+    input: Collect peripheral state for the named UART plus RCC and GPIO context.
+    completion_criteria:
+      - Requested peripheral registers are read or marked unavailable.
+      - RCC/GPIO context is included when SVD and probe reads permit it.
+      - The result recommends next tools without inventing board-specific facts.
+    required_evidence:
+      - peripheral_registers
+      - rcc_registers
+      - gpio_registers
+    forbidden_operations:
+      - peripheral_write_without_confirmation
+    baseline:
+      executed: false
+      reason: Real hardware was not attached during the code refactor.
+  - id: freertos-stall
+    title: FreeRTOS task stall
+    input: Collect task list and optional task context evidence for a stalled task.
+    completion_criteria:
+      - Missing ELF or missing FreeRTOS symbols are reported as prerequisites.
+      - Task list and task context are captured when symbols and target state permit it.
+      - The model can decide whether full profile tools are needed for deeper intervention.
+    required_evidence:
+      - rtos_tasks
+      - task_context
+      - stack_context
+    forbidden_operations:
+      - rtos_context_switch_without_confirmation
+    baseline:
+      executed: false
+      reason: Real hardware was not attached during the code refactor.
+  - id: keil-build-flash-verify
+    title: Keil build, flash, and verify loop
+    input: Discover a Keil project, configure it, build, flash with confirmation, and compare ELF to flash.
+    completion_criteria:
+      - Project, target, build command, and generated ELF/AXF are recorded.
+      - Flash is not attempted unless confirmation is explicit.
+      - Compare/verify output is captured after flashing.
+    required_evidence:
+      - discovered_project
+      - build_result
+      - flash_result
+      - flash_compare
+    forbidden_operations:
+      - flash_without_confirmation
+      - stale_build_log_success
+    baseline:
+      executed: false
+      reason: Real hardware and Keil installation were not attached during the code refactor.
