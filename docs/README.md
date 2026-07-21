@@ -30,7 +30,6 @@ physical output still does not move.
 - [Tool Reference](tool-reference.md) - grouped MCP tool index
 - [Support Matrix](support-matrix.md) - backend support, target metadata, validation coverage, and limits
 - [MCP Usage Example](mcp-usage-example.md) - compact example session shape
-- [Codex Runbook](codex-runbook.md) - Codex development, validation, and commit conventions
 - [mcubug Codex/CC Skill](mcubug-skill.md) - install and maintain the bundled assistant skill
 - [v0.6 Roadmap](v0.6-roadmap.md) - current post-core roadmap
 
@@ -69,7 +68,6 @@ To keep the docs from drifting:
 - Put backend status, validated boards, partial paths, and known limits in
   [Support Matrix](support-matrix.md).
 - Put the complete grouped tool list in [Tool Reference](tool-reference.md).
-- Put Codex development, verification, and commit conventions in [Codex Runbook](codex-runbook.md).
 - Put bundled Codex/CC skill installation and sync notes in [mcubug Codex/CC Skill](mcubug-skill.md).
 
 When adding board support, prefer:
