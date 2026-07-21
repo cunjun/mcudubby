@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.6.0 - 2026-07-20
+
+### Changed
+- Switched the default MCP tool profile to `core`, exposing a smaller evidence-first tool set.
+- Added explicit `MCUBUDDY_TOOL_PROFILE=full` opt-in for the complete legacy tool surface plus
+  the new evidence collectors.
+- Made `list_tool_safety` report the active profile and hide non-exposed tool metadata by default.
+
+### Added
+- Added `collect_crash_evidence`, `collect_startup_evidence`, `collect_peripheral_evidence`, and
+  `collect_rtos_evidence` as structured evidence package entry points.
+- Added a repeatable GPT-5.6 tool-surface evaluation scenario file and baseline notes.
+
+### Migration
+- This is a breaking default-behavior change for alpha users. Existing clients that relied on the
+  full 0.5.x tool catalog should set `MCUBUDDY_TOOL_PROFILE=full` in their MCP server environment.
+
 ## 0.5.1 - 2026-07-20
 
 ### Changed

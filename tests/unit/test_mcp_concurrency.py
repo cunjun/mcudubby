@@ -76,9 +76,9 @@ async def _run_tool(app, name: str, arguments: dict | None = None):
 
 
 def test_execution_boundary_preserves_tool_registration_contract() -> None:
-    app = create_server(SessionState())
+    app = create_server(SessionState(), tool_profile="full")
 
-    assert len(app._tool_manager._tools) == 104
+    assert len(app._tool_manager._tools) == 108
     assert app._tool_manager.get_tool("probe_reset").parameters == {
         "properties": {
             "halt": {"default": False, "title": "Halt", "type": "boolean"},

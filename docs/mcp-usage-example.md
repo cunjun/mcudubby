@@ -13,8 +13,8 @@ The first useful session should:
 3. configure symbols and optional logs
 4. run a read-only smoke test
 5. collect stopped CPU context
-6. run a symptom-driven diagnosis
-7. fall back to lower-level tools when the diagnosis needs more evidence
+6. collect a symptom-specific evidence package
+7. switch to `MCUBUDDY_TOOL_PROFILE=full` only when core evidence is not enough
 
 ## Minimal Session
 
@@ -28,7 +28,7 @@ configure_elf("path/to/firmware.axf")
 board_smoke_test()
 probe_halt()
 read_stopped_context()
-diagnose("board does not boot")
+collect_startup_evidence()
 ```
 
 For a J-Link target:
@@ -77,6 +77,10 @@ sensor init...
 ```
 
 If logs stop at a specific stage and the CPU is halted in a fault handler, continue with:
+
+```text
+collect_crash_evidence(include_logs=true)
+```
 
 ```text
 diagnose_startup_failure()

@@ -18,6 +18,10 @@ and GDB servers as structured tools that AI assistants can call.
 It is designed for firmware development, board bring-up, fault isolation, debugging automation,
 and AI-assisted validation.
 
+McuBuddy v0.6 starts with a focused `core` MCP tool profile by default. Set
+`MCUBUDDY_TOOL_PROFILE=full` in the MCP server environment to expose the complete expert catalog
+from earlier alpha releases.
+
 > [!IMPORTANT]
 > This project is still in Alpha. Humans remain responsible for goals, wiring, and risk decisions;
 > AI calls tools, organizes evidence, and advances the debugging process. Before resets, execution
@@ -43,6 +47,8 @@ and AI-assisted validation.
   pyOCD/J-Link GDB server lifecycles.
 - **Safety boundaries**: Classify tools as read-only, execution-changing, runtime-writing, or
   persistently destructive, with explicit confirmation for high-risk operations.
+- **Core/full tool profiles**: Keep the default MCP schema small for common evidence-first flows,
+  while preserving the complete expert catalog behind explicit startup configuration.
 - **Evidence-driven results**: Return structured target, state, and validation evidence so AI can
   continue an investigation instead of guessing code changes from symptoms alone.
 

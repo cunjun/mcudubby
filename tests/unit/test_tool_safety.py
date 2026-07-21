@@ -150,6 +150,27 @@ def test_list_tool_safety_is_machine_readable() -> None:
     assert set(TOOL_SAFETY).issuperset({"doctor", "first_contact", "board_smoke_test"})
 
 
+def test_list_tool_safety_can_scope_to_active_profile() -> None:
+    result = list_tool_safety(
+        active_profile="core",
+        enabled_tool_names=frozenset({"doctor", "list_tool_safety"}),
+    )
+
+    assert result["active_profile"] == "core"
+    assert set(result["tools"]) == {"doctor", "list_tool_safety"}
+
+
+def test_list_tool_safety_can_explicitly_include_hidden_tools() -> None:
+    result = list_tool_safety(
+        active_profile="core",
+        enabled_tool_names=frozenset({"doctor"}),
+        include_hidden=True,
+    )
+
+    assert "probe_write_memory" in result["tools"]
+    assert result["hidden_tools_included"] is True
+
+
 def test_require_tool_confirmation_blocks_confirmed_tools_by_default() -> None:
     result = require_tool_confirmation("erase_flash", confirmed=False)
 
@@ -219,7 +240,7 @@ def test_state_changing_reads_require_confirmation_through_mcp() -> None:
     session = SessionState()
     probe = _StateChangingReadProbe()
     session.probe = probe
-    app = create_server(session)
+    app = create_server(session, tool_profile="full")
 
     cycle_result = asyncio.run(app._tool_manager.get_tool("read_cycle_counter").run({}))
     swo_result = asyncio.run(

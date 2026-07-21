@@ -8,6 +8,7 @@ from typing import Any
 
 from .session import SessionState
 from .tool_safety import get_tool_safety, require_tool_confirmation
+from .tool_profiles import ToolProfile, resolve_tool_profile
 
 
 def _run_callback(callback: Callable[..., Any], args: tuple[Any, ...], kwargs: dict[str, Any]) -> Any:
@@ -38,14 +39,28 @@ async def _run_serialized(
 class SessionToolRegistrar:
     """Register MCP tools behind a worker-thread and session-serialization boundary."""
 
-    def __init__(self, mcp: Any, session: SessionState) -> None:
+    def __init__(
+        self,
+        mcp: Any,
+        session: SessionState,
+        *,
+        tool_profile: ToolProfile | None = None,
+    ) -> None:
         self._mcp = mcp
         self._session = session
+        self._tool_profile = tool_profile or resolve_tool_profile()
+
+    @property
+    def active_tool_profile(self) -> ToolProfile:
+        return self._tool_profile
 
     def tool(self, *decorator_args: Any, **decorator_kwargs: Any) -> Callable:
-        register = self._mcp.tool(*decorator_args, **decorator_kwargs)
-
         def decorate(callback: Callable[..., Any]) -> Callable[..., Any]:
+            if not self._tool_profile.allows(callback.__name__):
+                return callback
+
+            register = self._mcp.tool(*decorator_args, **decorator_kwargs)
+
             @wraps(callback)
             async def execute(*args: Any, **kwargs: Any) -> Any:
                 policy = get_tool_safety(callback.__name__)
