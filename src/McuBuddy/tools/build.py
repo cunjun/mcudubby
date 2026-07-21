@@ -1,6 +1,13 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from ..session import SessionState
+from ..security_guards import (
+    ensure_file_allowed,
+    ensure_file_size_allowed,
+    runtime_config_for,
+)
 from ..tool_safety import require_tool_confirmation
 
 
@@ -19,6 +26,14 @@ def flash_firmware(
 ) -> dict:
     if blocked := require_tool_confirmation("flash_firmware", confirm):
         return blocked
+    config = runtime_config_for(session)
+    if session.config.elf.path:
+        if blocked := ensure_file_allowed(config, session.config.elf.path):
+            return blocked
+        if Path(session.config.elf.path).exists() and (
+            blocked := ensure_file_size_allowed(config, session.config.elf.path)
+        ):
+            return blocked
 
     disconnect_note = None
     try:

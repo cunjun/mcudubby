@@ -7,6 +7,7 @@ from ..config import ConnectAttempt, connect_attempts_to_dicts, get_builtin_prof
 from ..device_patch_manager import list_supported_targets as _list_supported_targets
 from ..device_patch_manager import resolve_device_patch as _resolve_device_patch
 from ..session import SessionState, create_probe_backend
+from ..security_guards import ensure_file_allowed, runtime_config_for
 
 
 def get_runtime_config(session: SessionState) -> dict:
@@ -210,6 +211,8 @@ def configure_elf(
     elf_path: str,
 ) -> dict:
     """Set the path to the ELF/AXF file for symbol resolution."""
+    if blocked := ensure_file_allowed(runtime_config_for(session), elf_path):
+        return blocked
     session.config.elf.path = elf_path
     return {
         "status": "ok",

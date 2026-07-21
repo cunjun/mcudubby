@@ -29,13 +29,15 @@ file:///E:/work_code/McuBuddy/skills/mcubug/SKILL.md
 From the repository root:
 
 ```powershell
-.\.venv\Scripts\python.exe .\skills\mcubug\scripts\install_skill.py --target codex --overwrite
+McuBuddy skill install --target codex --dry-run
+McuBuddy skill install --target codex --force
 ```
 
-If you have a normal `python` command available:
+If you are working from source before installing the package entry point, the compatibility script
+still works:
 
 ```powershell
-python .\skills\mcubug\scripts\install_skill.py --target codex --overwrite
+.\.venv\Scripts\python.exe .\skills\mcubug\scripts\install_skill.py --target codex --force
 ```
 
 The default Codex destination is:
@@ -69,13 +71,14 @@ Restart Codex or open a new Codex thread after installing so the skill list refr
 From the repository root:
 
 ```powershell
-.\.venv\Scripts\python.exe .\skills\mcubug\scripts\install_skill.py --target cc --overwrite
+McuBuddy skill install --target claude --dry-run
+McuBuddy skill install --target claude --force
 ```
 
 If you have a normal `python` command available:
 
 ```powershell
-python .\skills\mcubug\scripts\install_skill.py --target cc --overwrite
+python .\skills\mcubug\scripts\install_skill.py --target claude --force
 ```
 
 The default CC destination is:
@@ -106,11 +109,11 @@ Restart Claude Code / CC or open a new session after installing so the skill lis
 
 ## Custom Destination
 
-Use `--dest-root` to install somewhere else. The skill is copied into a `mcubug` subdirectory
-under the destination root:
+Use `--home` to install under a different home directory. The skill is copied into the assistant
+specific `skills\mcubug` directory:
 
 ```powershell
-python .\skills\mcubug\scripts\install_skill.py --dest-root C:\path\to\skills --overwrite
+McuBuddy skill install --target codex --home C:\path\to\home --force
 ```
 
 ## Refresh References After Editing Docs
@@ -124,13 +127,13 @@ When the project docs change, refresh the skill references:
 Then reinstall the skill if you want the local Codex copy updated:
 
 ```powershell
-.\.venv\Scripts\python.exe .\skills\mcubug\scripts\install_skill.py --target codex --overwrite
+McuBuddy skill install --target codex --force
 ```
 
 Or reinstall the CC copy:
 
 ```powershell
-.\.venv\Scripts\python.exe .\skills\mcubug\scripts\install_skill.py --target cc --overwrite
+McuBuddy skill install --target claude --force
 ```
 
 ## Validate

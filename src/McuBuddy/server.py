@@ -26,4 +26,6 @@ mcp = create_server()
 
 
 def main() -> None:
-    mcp.run()
+    from .cli import main as cli_main
+
+    raise SystemExit(cli_main())

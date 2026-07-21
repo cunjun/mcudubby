@@ -9,6 +9,11 @@ flows remain available by default, while expert/debugger-control tools require e
 
 - Default startup now exposes the fixed `core` tool set.
 - Set `MCUBUDDY_TOOL_PROFILE=full` to expose the complete legacy tool catalog.
+- Added CLI management commands:
+  `McuBuddy doctor`, `McuBuddy config generate/validate/show`, `McuBuddy probes list`, and
+  `McuBuddy skill install`.
+- Added configuration-driven hard safety guards for memory reads/writes, Flash erase/program
+  payload size, and allowed firmware/symbol file paths.
 - Added structured evidence entry points:
   `collect_crash_evidence`, `collect_startup_evidence`, `collect_peripheral_evidence`, and
   `collect_rtos_evidence`.
@@ -36,3 +41,16 @@ For an existing MCP config that needs the old full catalog:
 
 `full` is not deprecated; it is the expert profile. Restart the MCP server after changing the
 profile, and disconnect probes or log channels before restarting if a board is attached.
+
+## Release Checks
+
+Run these before publishing:
+
+```powershell
+python -m pytest
+python -m ruff check src tests scripts skills\mcubug\scripts
+python skills\mcubug\scripts\sync_references.py --check
+python skills\mcubug\scripts\validate_skill.py
+McuBuddy doctor --json
+McuBuddy skill install --target codex --dry-run --json
+```

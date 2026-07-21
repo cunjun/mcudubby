@@ -1,6 +1,11 @@
 from __future__ import annotations
 
 from ...session import SessionState
+from ...security_guards import (
+    ensure_memory_read_allowed,
+    ensure_memory_write_allowed,
+    runtime_config_for,
+)
 from ...tool_safety import require_tool_confirmation
 
 
@@ -13,6 +18,8 @@ def write_memory(
     if blocked := require_tool_confirmation("probe_write_memory", confirm):
         return blocked
     raw = bytes(data)
+    if blocked := ensure_memory_write_allowed(runtime_config_for(session), len(raw)):
+        return blocked
     session.probe.write_memory(address, raw)
     return {
         "status": "ok",
@@ -23,6 +30,8 @@ def write_memory(
 
 
 def read_memory(session: SessionState, address: int, size: int) -> dict:
+    if blocked := ensure_memory_read_allowed(runtime_config_for(session), size):
+        return blocked
     try:
         data = session.probe.read_memory(address, size)
     except Exception as e:
@@ -51,6 +60,8 @@ def dump_memory(
     columns: int = 16,
 ) -> dict:
     """Read and format memory. format: 'hex', 'u8', 'u16', 'u32', 'u64'."""
+    if blocked := ensure_memory_read_allowed(runtime_config_for(session), size):
+        return blocked
     try:
         data = session.probe.read_memory(address, size)
     except Exception as e:
@@ -99,6 +110,8 @@ def memory_find(
     pattern: list[int],
     max_results: int = 16,
 ) -> dict:
+    if blocked := ensure_memory_read_allowed(runtime_config_for(session), size):
+        return blocked
     try:
         data = session.probe.read_memory(address, size)
     except Exception as e:
@@ -247,6 +260,17 @@ def compare_elf_to_flash(session: SessionState) -> dict:
         vma: int = sec["vma"]
         expected: bytes = sec["data"]
         size = len(expected)
+        if blocked := ensure_memory_read_allowed(runtime_config_for(session), size):
+            results.append(
+                {
+                    "section": sec["name"],
+                    "address": hex(vma),
+                    "size": size,
+                    "status": "blocked",
+                    "error": blocked["summary"],
+                }
+            )
+            continue
         try:
             actual = session.probe.read_memory(vma, size)
         except Exception as e:
@@ -299,6 +323,8 @@ def compare_elf_to_flash(session: SessionState) -> dict:
 
 def memory_snapshot(session: SessionState, address: int, size: int, label: str = "default") -> dict:
     """Capture a memory snapshot and store it under label for later diff."""
+    if blocked := ensure_memory_read_allowed(runtime_config_for(session), size):
+        return blocked
     try:
         data = session.probe.read_memory(address, size)
     except Exception as e:
@@ -327,6 +353,8 @@ def memory_diff(session: SessionState, label: str = "default") -> dict:
     size: int = snap["size"]
     old_data: bytes = snap["data"]
 
+    if blocked := ensure_memory_read_allowed(runtime_config_for(session), size):
+        return blocked
     try:
         new_data = session.probe.read_memory(address, size)
     except Exception as e:

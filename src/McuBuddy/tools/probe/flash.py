@@ -1,6 +1,12 @@
 from __future__ import annotations
 
 from ...session import SessionState
+from ...security_guards import (
+    ensure_flash_erase_allowed,
+    ensure_flash_payload_size_allowed,
+    ensure_flash_program_allowed,
+    runtime_config_for,
+)
 from ...tool_safety import require_tool_confirmation
 
 
@@ -12,6 +18,8 @@ def erase_flash(
     confirm: bool = False,
 ) -> dict:
     if blocked := require_tool_confirmation("erase_flash", confirm):
+        return blocked
+    if blocked := ensure_flash_erase_allowed(runtime_config_for(session)):
         return blocked
     try:
         return session.probe.erase_flash(
@@ -37,6 +45,8 @@ def program_flash(
         return blocked
     try:
         payload = bytes(data) if not isinstance(data, bytes) else data
+        if blocked := ensure_flash_program_allowed(runtime_config_for(session), len(payload)):
+            return blocked
         return session.probe.program_flash(address=address, data=payload, verify=verify)
     except Exception as e:
         return {
@@ -52,6 +62,8 @@ def verify_flash(
 ) -> dict:
     try:
         payload = bytes(data) if not isinstance(data, bytes) else data
+        if blocked := ensure_flash_payload_size_allowed(runtime_config_for(session), len(payload)):
+            return blocked
         return session.probe.verify_flash(address=address, data=payload)
     except Exception as e:
         return {

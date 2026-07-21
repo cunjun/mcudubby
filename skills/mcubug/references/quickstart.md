@@ -23,6 +23,18 @@ pip install -e ".[dev]"
 
 ## 2. Configure MCP
 
+Before editing your MCP client config, run the local management checks:
+
+```bash
+McuBuddy doctor
+McuBuddy config generate > mcubuddy.toml
+McuBuddy config validate mcubuddy.toml
+McuBuddy probes list
+```
+
+Use `--json` with `doctor` or `probes list` when sharing machine-readable setup details in an
+issue or support thread.
+
 McuBuddy v0.6 starts in the `core` tool profile by default. This keeps the MCP schema small and
 focuses the model on bring-up, evidence collection, peripheral/RTOS/log inspection, and
 build/flash/verify loops.
@@ -65,6 +77,14 @@ active probes or log channels and restart the MCP server; the active profile can
 inside an existing MCP session.
 
 ## 3. Discover hardware
+
+From a terminal, you can check probe discovery before starting an MCP client:
+
+```bash
+McuBuddy probes list
+```
+
+Inside the MCP session, use:
 
 ```python
 list_connected_probes()
@@ -154,3 +174,25 @@ configure_log(uart_port="COM5", uart_baudrate=115200)
 connect_with_config()
 log_tail()
 ```
+
+## 7. Safety Configuration
+
+The generated `mcubuddy.toml` includes conservative defaults for destructive operations:
+
+```toml
+[memory]
+max_read_size = 4096
+max_write_size = 1024
+allow_write = false
+
+[flash]
+allow_erase = false
+allow_program = true
+max_binary_size = 16777216
+
+[security]
+allowed_file_paths = []
+```
+
+Keep these defaults for first contact. Enable memory writes or flash erase only for a known board,
+known firmware, and a workflow where the risk is intentional.

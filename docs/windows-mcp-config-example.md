@@ -38,6 +38,17 @@ python -m McuBuddy
 McuBuddy
 ```
 
+Before registering the server, run these in the same environment you plan to use from the MCP
+client:
+
+```powershell
+McuBuddy doctor
+McuBuddy config generate | Out-File -Encoding utf8 mcubuddy.toml
+McuBuddy config validate mcubuddy.toml
+McuBuddy probes list
+McuBuddy skill install --target codex --dry-run
+```
+
 Start with `py -3 -m McuBuddy` if the Python launcher is installed. Use an explicit virtualenv
 Python path when the MCP client does not inherit your shell environment.
 
@@ -162,3 +173,5 @@ If the server starts but tools fail:
 - confirm `pyocd`, `pyserial`, and optional J-Link dependencies exist in that environment
 - confirm the probe is not owned by another debugger
 - confirm target power, wiring, reset, and probe serial selection
+- run `McuBuddy doctor --json` and compare the reported Python, backend, config, Skill, and probe
+  checks with the MCP client's configured environment
