@@ -429,6 +429,13 @@ ruff check src tests
 
 See the [Docs Index](docs/README.md) for repository layout and documentation ownership.
 
+## 🙏 Upstream and Acknowledgements
+
+McuBuddy is based on [SolarWang233/mcudbg](https://github.com/SolarWang233/mcudbg)
+and continues its MIT-licensed work with additional architecture, safety boundaries, evidence
+workflows, backend support, and documentation. The original copyright notice is preserved in
+[LICENSE](LICENSE), with provenance details in [NOTICE](NOTICE).
+
 ## 📄 License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.

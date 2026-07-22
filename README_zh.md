@@ -402,6 +402,12 @@ ruff check src tests
 
 项目目录约定和贡献文档归属见 [Docs Index](docs/README.md)。
 
+## 🙏 上游来源与致谢
+
+McuBuddy 基于 [SolarWang233/mcudbg](https://github.com/SolarWang233/mcudbg) 开发，并在其
+MIT License 授权的代码基础上扩展了架构、安全边界、证据工作流、后端支持和文档。
+原始版权声明保留在 [LICENSE](LICENSE) 中，来源详情见 [NOTICE](NOTICE)。
+
 ## 📄 License
 
 本项目采用 MIT License，详见 [LICENSE](LICENSE)。

@@ -58,6 +58,7 @@ Homepage = "https://github.com/cunjun/McuBuddy"
 Documentation = "https://github.com/cunjun/McuBuddy#readme"
 Repository = "https://github.com/cunjun/McuBuddy"
 Issues = "https://github.com/cunjun/McuBuddy/issues"
+Upstream = "https://github.com/SolarWang233/mcudbg"
 
 [project.optional-dependencies]
 jlink = [

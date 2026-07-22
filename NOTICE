@@ -1,0 +1,14 @@
+McuBuddy upstream attribution
+=============================
+
+McuBuddy is based on and derived from mcudbg:
+
+  Project: mcudbg
+  Author: SolarWang233
+  Source: https://github.com/SolarWang233/mcudbg
+  License: MIT License
+
+McuBuddy preserves the upstream copyright and license notice in LICENSE.
+McuBuddy includes subsequent modifications and additions, including architecture refactoring,
+execution-safety boundaries, structured evidence workflows, additional backend support, and
+expanded documentation and validation.

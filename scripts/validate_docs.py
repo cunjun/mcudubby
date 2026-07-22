@@ -34,6 +34,9 @@ README_REQUIRED_TOKENS = {
         "执行状态变化",
     ),
 }
+UPSTREAM_COPYRIGHT = "Copyright (c) 2026 SolarWang233"
+UPSTREAM_URL = "https://github.com/SolarWang233/mcudbg"
+UPSTREAM_URL_FILES = ("NOTICE", "README.md", "README_zh.md", "pyproject.toml")
 
 
 def validate_repository(repo: Path) -> list[str]:
@@ -51,6 +54,8 @@ def validate_repository(repo: Path) -> list[str]:
         errors.extend(_validate_profile_regions(relative, text, known_tools, core_tools))
 
     errors.extend(_validate_readmes(repo))
+    errors.extend(_validate_upstream_license(repo))
+    errors.extend(_validate_upstream_urls(repo))
     return sorted(errors)
 
 
@@ -205,6 +210,22 @@ def _validate_readmes(repo: Path) -> list[str]:
         for token in required_tokens:
             if token not in text:
                 errors.append(f"{name}: missing critical token '{token}'")
+    return errors
+
+
+def _validate_upstream_license(repo: Path) -> list[str]:
+    path = repo / "LICENSE"
+    if not path.exists() or UPSTREAM_COPYRIGHT not in path.read_text(encoding="utf-8"):
+        return ["LICENSE: missing upstream copyright"]
+    return []
+
+
+def _validate_upstream_urls(repo: Path) -> list[str]:
+    errors: list[str] = []
+    for name in UPSTREAM_URL_FILES:
+        path = repo / name
+        if not path.exists() or UPSTREAM_URL not in path.read_text(encoding="utf-8"):
+            errors.append(f"{name}: missing upstream URL")
     return errors
 
 

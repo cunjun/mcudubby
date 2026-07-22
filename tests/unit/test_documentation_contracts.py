@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from scripts.validate_docs import validate_repository
+
+
+UPSTREAM_URL = "https://github.com/SolarWang233/mcudbg"
 
 
 def _write(path: Path, text: str) -> None:
@@ -23,15 +28,29 @@ def _minimal_repo(tmp_path: Path) -> Path:
     _write(
         tmp_path / "README.md",
         "default core\nMCUBUDDY_TOOL_PROFILE=full\n[Quickstart](docs/quickstart.md)\n"
-        "[Tool Reference](docs/tool-reference.md)\nexecution-changing\n",
+        "[Tool Reference](docs/tool-reference.md)\nexecution-changing\n"
+        f"Upstream: {UPSTREAM_URL}\n",
     )
     _write(
         tmp_path / "README_zh.md",
         "默认 core\nMCUBUDDY_TOOL_PROFILE=full\n[快速开始](docs/quickstart.md)\n"
-        "[工具参考](docs/tool-reference.md)\n执行状态变化\n",
+        "[工具参考](docs/tool-reference.md)\n执行状态变化\n"
+        f"上游：{UPSTREAM_URL}\n",
     )
     _write(tmp_path / "docs" / "quickstart.md", "# Quickstart\n")
     _write(tmp_path / "docs" / "tool-reference.md", "# Tools\n")
+    _write(
+        tmp_path / "LICENSE",
+        "MIT License\n\nCopyright (c) 2026 SolarWang233\n",
+    )
+    _write(
+        tmp_path / "NOTICE",
+        f"Upstream: {UPSTREAM_URL}\n",
+    )
+    _write(
+        tmp_path / "pyproject.toml",
+        f'[project.urls]\nUpstream = "{UPSTREAM_URL}"\n',
+    )
     return tmp_path
 
 
@@ -111,3 +130,34 @@ def test_missing_tool_contract_fails_closed(tmp_path: Path) -> None:
     assert any(
         "unable to load CORE_TOOL_NAMES" in error for error in validate_repository(repo)
     )
+
+
+def test_upstream_attribution_is_required(tmp_path: Path) -> None:
+    repo = _minimal_repo(tmp_path)
+    (repo / "LICENSE").write_text("MIT License\n", encoding="utf-8")
+
+    assert any(
+        "LICENSE: missing upstream copyright" in error
+        for error in validate_repository(repo)
+    )
+
+
+@pytest.mark.parametrize(
+    ("relative_path", "expected_error"),
+    (
+        ("NOTICE", "NOTICE: missing upstream URL"),
+        ("README.md", "README.md: missing upstream URL"),
+        ("README_zh.md", "README_zh.md: missing upstream URL"),
+        ("pyproject.toml", "pyproject.toml: missing upstream URL"),
+    ),
+)
+def test_upstream_url_is_required_in_project_metadata(
+    tmp_path: Path,
+    relative_path: str,
+    expected_error: str,
+) -> None:
+    repo = _minimal_repo(tmp_path)
+    path = repo / relative_path
+    path.write_text(path.read_text(encoding="utf-8").replace(UPSTREAM_URL, ""), encoding="utf-8")
+
+    assert expected_error in validate_repository(repo)
