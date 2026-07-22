@@ -8,6 +8,7 @@ from McuBuddy.security_guards import (
     ensure_flash_erase_allowed,
     ensure_memory_read_allowed,
     ensure_memory_write_allowed,
+    ensure_rtt_scan_allowed,
 )
 from McuBuddy.tools.probe import erase_flash, read_memory, write_memory
 
@@ -87,3 +88,13 @@ def test_erase_flash_guard_runs_after_confirmation_before_backend() -> None:
     assert result["status"] == "error"
     assert result["security"]["guard"] == "flash.allow_erase"
     assert probe.calls == []
+
+
+def test_rtt_scan_limit_blocks_large_scan() -> None:
+    config = RuntimeConfig()
+    config.security.max_rtt_scan_size = 256
+
+    result = ensure_rtt_scan_allowed(config, 512)
+
+    assert result is not None
+    assert result["security"]["guard"] == "security.max_rtt_scan_size"

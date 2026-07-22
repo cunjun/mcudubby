@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+import json
 import os
 from pathlib import Path
-from typing import Literal
-import tomllib
+from typing import Any, Literal
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
 
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
@@ -85,6 +90,14 @@ class FlashConfig(BaseModel):
 
 class SecurityConfig(BaseModel):
     allowed_file_paths: list[str] = Field(default_factory=list)
+    max_rtt_scan_size: int = 0x50000
+
+    @field_validator("max_rtt_scan_size")
+    @classmethod
+    def _positive_size(cls, value: int) -> int:
+        if value <= 0:
+            raise ValueError("must be greater than 0")
+        return value
 
 
 class DemoProfile(BaseModel):
@@ -129,17 +142,97 @@ def load_config_file(path: str | Path) -> RuntimeConfig:
     return RuntimeConfig.model_validate(data)
 
 
-def load_config(path: str | Path | None = None) -> RuntimeConfig:
+def load_config(
+    path: str | Path | None = None,
+    *,
+    environ: Mapping[str, str] | None = None,
+    cli_overrides: Mapping[str, object] | None = None,
+) -> RuntimeConfig:
     config = load_config_file(path) if path else default_config()
-    apply_environment_overrides(config)
-    return config
+    config = apply_environment_overrides(config, environ=environ)
+    return apply_config_overrides(config, cli_overrides)
 
 
-def apply_environment_overrides(config: RuntimeConfig) -> RuntimeConfig:
-    tool_profile = os.environ.get("MCUBUDDY_TOOL_PROFILE")
-    if tool_profile:
-        config.server = ServerConfig(tool_profile=tool_profile.strip().lower())
-    return config
+_ENVIRONMENT_OVERRIDE_PATHS = {
+    "MCUBUDDY_TOOL_PROFILE": "server.tool_profile",
+    "MCUBUDDY_PROBE_BACKEND": "probe.backend",
+    "MCUBUDDY_PROBE_TARGET": "probe.target",
+    "MCUBUDDY_MAX_READ_SIZE": "memory.max_read_size",
+    "MCUBUDDY_MAX_WRITE_SIZE": "memory.max_write_size",
+    "MCUBUDDY_ALLOW_MEMORY_WRITE": "memory.allow_write",
+    "MCUBUDDY_ALLOW_FLASH_ERASE": "flash.allow_erase",
+    "MCUBUDDY_ALLOW_FLASH_PROGRAM": "flash.allow_program",
+    "MCUBUDDY_MAX_BINARY_SIZE": "flash.max_binary_size",
+    "MCUBUDDY_MAX_RTT_SCAN_SIZE": "security.max_rtt_scan_size",
+}
+
+
+def apply_environment_overrides(
+    config: RuntimeConfig,
+    *,
+    environ: Mapping[str, str] | None = None,
+) -> RuntimeConfig:
+    source = os.environ if environ is None else environ
+    assignments = []
+    for name, path in _ENVIRONMENT_OVERRIDE_PATHS.items():
+        value = source.get(name)
+        if value in (None, ""):
+            continue
+        normalized = value.strip().lower() if name == "MCUBUDDY_TOOL_PROFILE" else value
+        assignments.append(f"{path}={normalized}")
+    return apply_config_overrides(config, parse_cli_overrides(assignments))
+
+
+def parse_cli_overrides(assignments: list[str] | None) -> dict[str, object]:
+    overrides: dict[str, object] = {}
+    for assignment in assignments or []:
+        path, separator, raw_value = assignment.partition("=")
+        parts = path.strip().split(".")
+        if not separator or len(parts) != 2 or not all(parts):
+            raise ValueError(
+                f"Invalid config override {assignment!r}; expected SECTION.FIELD=VALUE."
+            )
+        section, field = parts
+        section_info = RuntimeConfig.model_fields.get(section)
+        section_model = section_info.annotation if section_info else None
+        if (
+            section_info is None
+            or not isinstance(section_model, type)
+            or not issubclass(section_model, BaseModel)
+            or field not in section_model.model_fields
+        ):
+            raise ValueError(f"Unknown config override {section}.{field}.")
+        section_values = overrides.setdefault(section, {})
+        if not isinstance(section_values, dict):
+            raise ValueError(f"Config override section {section!r} is invalid.")
+        section_values[field] = _parse_override_value(raw_value.strip())
+    return overrides
+
+
+def apply_config_overrides(
+    config: RuntimeConfig,
+    overrides: Mapping[str, object] | None,
+) -> RuntimeConfig:
+    if not overrides:
+        return config
+    data = config.model_dump()
+    _merge_config_values(data, overrides)
+    return RuntimeConfig.model_validate(data)
+
+
+def _merge_config_values(target: dict[str, Any], values: Mapping[str, object]) -> None:
+    for key, value in values.items():
+        if isinstance(value, Mapping) and isinstance(target.get(key), dict):
+            _merge_config_values(target[key], value)
+        else:
+            target[key] = value
+
+
+def _parse_override_value(value: str) -> object:
+    try:
+        return json.loads(value)
+    except json.JSONDecodeError:
+        return value
 
 
 def validate_config_file(path: str | Path) -> tuple[RuntimeConfig | None, list[dict[str, object]]]:

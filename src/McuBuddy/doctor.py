@@ -10,6 +10,8 @@ from .backends.probe.sidecar_client import resolve_sidecar_path
 from .config import RuntimeConfig, config_for_display
 from .session import SessionState, create_probe_backend
 
+DOCTOR_SCHEMA_VERSION = "1.0"
+
 
 def build_doctor_report(config: RuntimeConfig) -> dict[str, Any]:
     checks = [
@@ -24,11 +26,23 @@ def build_doctor_report(config: RuntimeConfig) -> dict[str, Any]:
     ]
     status = _overall_status(checks)
     return {
+        "schema_version": DOCTOR_SCHEMA_VERSION,
         "status": status,
         "summary": _summary(status),
         "version": __version__,
         "checks": checks,
         "config": config_for_display(config),
+    }
+
+
+def build_doctor_error_report(summary: str) -> dict[str, Any]:
+    return {
+        "schema_version": DOCTOR_SCHEMA_VERSION,
+        "status": "error",
+        "summary": f"Configuration failed to load: {summary}",
+        "version": __version__,
+        "checks": [{"name": "config", "status": "error", "summary": summary}],
+        "config": None,
     }
 
 

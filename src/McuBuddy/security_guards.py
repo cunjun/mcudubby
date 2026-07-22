@@ -53,6 +53,22 @@ def ensure_memory_write_allowed(config: RuntimeConfig, size: int) -> dict | None
     return None
 
 
+def ensure_rtt_scan_allowed(config: RuntimeConfig, size: int) -> dict | None:
+    if size < 0:
+        return blocked(
+            "RTT scan size must not be negative.",
+            guard="security.max_rtt_scan_size",
+        )
+    max_size = config.security.max_rtt_scan_size
+    if size > max_size:
+        return blocked(
+            f"RTT scan of {size} byte(s) exceeds configured limit of {max_size}.",
+            guard="security.max_rtt_scan_size",
+            details={"requested_size": size, "max_rtt_scan_size": max_size},
+        )
+    return None
+
+
 def ensure_flash_erase_allowed(config: RuntimeConfig) -> dict | None:
     if config.flash.allow_erase:
         return None

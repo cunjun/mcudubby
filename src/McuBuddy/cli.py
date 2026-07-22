@@ -8,9 +8,10 @@ from .config import (
     config_for_display,
     config_to_toml,
     load_config,
+    parse_cli_overrides,
     validate_config_file,
 )
-from .doctor import build_doctor_report
+from .doctor import build_doctor_error_report, build_doctor_report
 from .session import SessionState, create_probe_backend
 from .skill_installer import install_skill
 
@@ -19,16 +20,19 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     command = args.command or "serve"
-    if command == "serve":
-        return _serve()
-    if command == "doctor":
-        return _doctor(args)
-    if command == "config":
-        return _config(args)
-    if command == "probes":
-        return _probes(args)
-    if command == "skill":
-        return _skill(args)
+    try:
+        if command == "serve":
+            return _serve(args)
+        if command == "doctor":
+            return _doctor(args)
+        if command == "config":
+            return _config(args)
+        if command == "probes":
+            return _probes(args)
+        if command == "skill":
+            return _skill(args)
+    except (OSError, ValueError) as exc:
+        parser.error(str(exc))
     parser.error(f"unknown command: {command}")
     return 2
 
@@ -37,10 +41,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="McuBuddy")
     subparsers = parser.add_subparsers(dest="command")
 
-    subparsers.add_parser("serve", help="Start the MCP stdio server.")
+    serve = subparsers.add_parser("serve", help="Start the MCP stdio server.")
+    _add_config_options(serve)
 
     doctor = subparsers.add_parser("doctor", help="Check local runtime readiness.")
-    doctor.add_argument("--config", help="Path to a McuBuddy TOML config file.")
+    _add_config_options(doctor)
     doctor.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
 
     config = subparsers.add_parser("config", help="Generate, validate, or show config.")
@@ -49,13 +54,13 @@ def build_parser() -> argparse.ArgumentParser:
     validate = config_sub.add_parser("validate", help="Validate a TOML configuration.")
     validate.add_argument("path", help="Path to the config file.")
     show = config_sub.add_parser("show", help="Show the effective configuration.")
-    show.add_argument("--config", help="Path to a McuBuddy TOML config file.")
+    _add_config_options(show)
     show.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
 
     probes = subparsers.add_parser("probes", help="Probe management commands.")
     probes_sub = probes.add_subparsers(dest="probes_command", required=True)
     probe_list = probes_sub.add_parser("list", help="List connected debug probes.")
-    probe_list.add_argument("--config", help="Path to a McuBuddy TOML config file.")
+    _add_config_options(probe_list)
     probe_list.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
 
     skill = subparsers.add_parser("skill", help="Skill management commands.")
@@ -71,22 +76,43 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _serve() -> int:
-    from .server import mcp
+def _add_config_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--config", help="Path to a McuBuddy TOML config file.")
+    parser.add_argument(
+        "--set",
+        action="append",
+        default=[],
+        metavar="SECTION.FIELD=VALUE",
+        help="Override a config value. May be specified more than once.",
+    )
 
-    mcp.run()
+
+def _load_command_config(args: argparse.Namespace):
+    return load_config(
+        getattr(args, "config", None),
+        cli_overrides=parse_cli_overrides(getattr(args, "set", [])),
+    )
+
+
+def _serve(args: argparse.Namespace) -> int:
+    from .server import create_server
+
+    config = _load_command_config(args)
+    session = SessionState(config=config)
+    session.probe = create_probe_backend(
+        config.probe.backend,
+        jlink_dll_path=config.probe.jlink_dll_path,
+        probe_rs_sidecar_path=config.probe.probe_rs_sidecar_path,
+    )
+    create_server(session, tool_profile=config.server.tool_profile).run()
     return 0
 
 
 def _doctor(args: argparse.Namespace) -> int:
     try:
-        config = load_config(args.config)
+        config = _load_command_config(args)
     except Exception as exc:
-        report = {
-            "status": "error",
-            "summary": f"Configuration failed to load: {exc}",
-            "checks": [{"name": "config", "status": "error", "summary": str(exc)}],
-        }
+        report = build_doctor_error_report(str(exc))
     else:
         report = build_doctor_report(config)
     _print_report(report, as_json=args.json)
@@ -108,14 +134,14 @@ def _config(args: argparse.Namespace) -> int:
         print("Configuration is valid.")
         return 0
     if args.config_command == "show":
-        config = load_config(args.config)
+        config = _load_command_config(args)
         _print_report(config_for_display(config), as_json=args.json)
         return 0
     raise ValueError(f"Unknown config command: {args.config_command}")
 
 
 def _probes(args: argparse.Namespace) -> int:
-    config = load_config(args.config)
+    config = _load_command_config(args)
     try:
         session = SessionState()
         session.config = config

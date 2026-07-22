@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+from McuBuddy.config import RuntimeConfig
 from McuBuddy.tools.probe import read_rtt_log
 
 
@@ -76,3 +77,24 @@ def test_read_rtt_log_falls_back_to_memory_scan() -> None:
     assert result["status"] == "ok"
     assert result["text"] == "hello"
     assert result["backend_hint"] == "backend RTT unavailable"
+
+
+def test_read_rtt_log_blocks_oversized_fallback_scan_before_memory_read() -> None:
+    probe = _FallbackProbe()
+    probe.read_calls = []
+    original_read_memory = probe.read_memory
+
+    def tracked_read_memory(address: int, size: int) -> bytes:
+        probe.read_calls.append((address, size))
+        return original_read_memory(address, size)
+
+    probe.read_memory = tracked_read_memory
+    config = RuntimeConfig()
+    config.security.max_rtt_scan_size = 0x100
+    session = SimpleNamespace(probe=probe, config=config)
+
+    result = read_rtt_log(session, search_size=0x120)
+
+    assert result["status"] == "error"
+    assert result["security"]["guard"] == "security.max_rtt_scan_size"
+    assert probe.read_calls == []

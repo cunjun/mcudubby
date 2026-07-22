@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ...backends.probe.base import ProbeCapability, probe_supports
+from ...security_guards import ensure_rtt_scan_allowed, runtime_config_for
 from ...session import SessionState
 
 
@@ -19,6 +20,9 @@ def read_rtt_log(
             backend_result = {"status": "error", "summary": str(e)}
         if backend_result.get("status") == "ok":
             return backend_result
+
+    if blocked := ensure_rtt_scan_allowed(runtime_config_for(session), search_size):
+        return blocked
 
     magic = b"SEGGER RTT\x00"
     chunk_size = 1024
