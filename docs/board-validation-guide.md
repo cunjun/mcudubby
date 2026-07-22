@@ -1,217 +1,105 @@
 # Board Validation Guide
 
-This document is a practical checklist for validating `McuBuddy` features on a real board.
+This guide records reproducible real-board evidence. Configuration, mocks, and host-side tests do not prove hardware support.
 
-Use it after:
+## Required identity
 
-- adding a new backend capability
-- modifying demo firmware
-- changing ELF / DWARF / RTOS / RTT logic
-- bringing up a new probe or board target
+Record the board/revision, MCU marking and backend target, probe model/ID, backend version, firmware build/hash, ELF/SVD/pack identity, and wiring/power/reset assumptions.
 
-The goal is to collect concrete evidence, not just confirm that a command did not crash.
+## Validation order
 
-## 1. Validation Principles
+### A. Discover
 
-Prefer this order:
+```text
+list_connected_probes()
+match_chip_name(target="device marking")
+get_target_info(target="target-name")
+```
 
-1. confirm the probe and target can attach
-2. confirm one non-destructive read path with `board_smoke_test(...)`
-3. confirm symbol/source resolution works
-4. confirm the feature under test
-5. record exact evidence in `PROGRESS.md`
+Pass: the intended probe and an unambiguous target are recorded.
 
-Always prefer:
+### B. Connect
 
-- real addresses
-- real symbols
-- real source lines
-- real task names
-- real log text
+```text
+configure_probe(backend="pyocd")
+probe_connect(target="target-name")
+```
 
-Avoid vague statements such as:
+Pass: transport, core identity, and probe ownership are confirmed without unexplained warnings.
 
-- "seems to work"
-- "probably okay"
-- "looks fine"
+### C. Control and read
 
-## 2. Minimum Validation Record
+```text
+probe_reset(halt=True)
+read_stopped_context()
+```
 
-For any board-facing change, record:
+Pass: halt/reset and stable core-register reads are repeatable. Document these execution-state changes.
 
-- board name
-- MCU
-- probe type
-- backend
-- firmware image or demo used
-- exact tool calls
-- exact observed results
-- any remaining limitation
+### D. Symbols and source
 
-Good examples:
+```text
+configure_elf(elf_path="build/firmware.elf")
+elf_load(path="build/firmware.elf")
+backtrace()
+```
 
-- `run_to_function('main') -> pc=0x8008804, source=main.c:73`
-- `rtos_task_context('Tmr Svc') -> prvProcessTimerOrBlockTask`
-- `read_rtt_log() captured 'TimerCallback fired count=3'`
+Pass: the ELF matches flash and produces credible symbol/source context.
 
-## 3. Recommended Validation Sequence
+### E. Peripheral, logs, and RTOS
 
-Run the sequence once with the default `core` profile. Repeat with
-`MCUBUDDY_TOOL_PROFILE=full` when validating expert-only tools or comparing model tool selection.
-Record the active profile in every validation note.
+```text
+svd_load(svd_path="device.svd")
+collect_peripheral_evidence(peripheral="RCC")
+read_rtt_log()
+collect_rtos_evidence()
+```
 
-### A. Attach and stop-state sanity check
+Run only applicable capabilities. Distinguish unsupported, not configured, and empty evidence.
 
-1. `list_connected_probes()`
-2. `get_target_info(...)`
-3. `configure_probe(...)`
-4. `board_smoke_test(disconnect_after=True)`
-5. `probe_connect(...)`
-6. `probe_halt()` or `probe_reset(halt=True)`
-7. `read_stopped_context()`
+### F. Persistent operations
 
-Expected evidence:
+Build/flash validation requires explicit authorization and a recoverable image. Record the image, address/range, verification method, and post-flash evidence. A successful return alone does not prove programming.
 
-- target attached
-- PC is readable
-- state is readable
-- symbol/source resolution works when ELF is loaded
+## Evidence record
 
-### B. Symbol and source validation
+```json
+{
+  "board": "board-name/revision",
+  "target": "backend-target",
+  "probe": "model-and-id",
+  "backend": "pyocd",
+  "firmware": {"build": "id", "sha256": "..."},
+  "capability": "stopped-context",
+  "result": "pass",
+  "commands": ["probe_reset(halt=True)", "read_stopped_context()"],
+  "evidence": "artifact-or-log-reference",
+  "limitations": []
+}
+```
 
-1. `elf_load(...)`
-2. `run_to_function(...)`
-3. `source_step()`
-4. `step_over()`
-5. `step_out()`
+Results are `pass`, `fail`, `blocked`, or `not_applicable`; do not use vague percentages.
 
-Expected evidence:
+## Support-matrix update
 
-- function name resolves
-- source line changes are meaningful
-- step operations return usable `pc`, `symbol`, and `source`
+Update [support-matrix.md](support-matrix.md) only from recorded evidence.
 
-### C. RTT / log validation
+| Field | Meaning |
+| --- | --- |
+| Backend/target | Exact tested combination |
+| Capability | Smallest independently proven behavior |
+| Status | pass/fail/blocked/not applicable |
+| Evidence | Stable artifact or validation record |
+| Limits | Speed, reset mode, pack, firmware, or environment constraints |
 
-1. `read_rtt_log()`
-2. if needed, run backend-specific smoke scripts
-3. verify actual text, not only control-block discovery
+## Failure handling
 
-Expected evidence:
+1. Preserve the raw result and transport errors.
+2. Recheck power, wiring, reset, probe ownership, and target name.
+3. Retry only after recording the changed condition.
+4. Keep backend limitations separate from firmware defects.
+5. Never turn a blocked check into a passing claim.
 
-- non-empty text when firmware is expected to emit logs
-- control block address if the implementation reports it
-- known startup or heartbeat lines
+## Completion criteria
 
-### D. RTOS validation
-
-1. `list_rtos_tasks()`
-2. `rtos_task_context(...)`
-3. `read_stack_usage()`
-
-Expected evidence:
-
-- task names are readable
-- blocked tasks resolve to meaningful wait functions
-- stack usage data is plausible
-
-### F. Core evidence package validation
-
-1. `collect_startup_evidence(...)`
-2. `collect_crash_evidence(...)` when the firmware is in a fault or halted failure state
-3. `collect_peripheral_evidence(peripheral="...")`
-4. `collect_rtos_evidence(...)`
-
-Expected evidence:
-
-- unavailable prerequisites are explicit
-- partial observations do not fail the whole package
-- summaries describe collection completeness, not unproven root cause
-- hidden full-profile tools are not called from a core-profile session
-
-### E. Flash validation
-
-1. `erase_flash(...)`
-2. `program_flash(...)`
-3. `verify_flash(...)`
-
-Expected evidence:
-
-- exact flash address range
-- exact byte count
-- explicit verify success
-
-## 4. Probe-Specific Notes
-
-### pyOCD
-
-Use for:
-
-- ST-Link
-- CMSIS-DAP
-- primary STM32L496 validation path
-- CMSIS-Pack-supplied targets via `configure_probe(pack_path=...)`
-
-Preferred evidence:
-
-- source-level stepping
-- SVD reads
-- RTOS task inspection
-
-### J-Link
-
-Use for:
-
-- native RTT
-- J-Link GDB server
-- DWT cycle counter
-
-Be explicit about whether:
-
-- the DLL path was auto-discovered
-- serial selection worked directly or needed fallback
-- SWO was only path-validated or fully text-validated
-
-## 5. What Counts As Partial?
-
-Mark a validation result as partial when:
-
-- the feature path is callable but the firmware did not emit useful data
-- the feature works in tests but not yet on real hardware
-- the feature works on one board but not yet on the target board you care about
-- the backend path works but the physical board wiring blocks the final signal
-
-Examples:
-
-- SWO host buffer reads succeed but no text is captured because the trace pin is not usable on that board
-- RTT control block is found but no lines have been emitted yet
-
-## 6. What To Update After Validation
-
-After every meaningful validation round:
-
-1. update `PROGRESS.md`
-2. update `README.md` if public capability claims changed
-3. update `README_CN.md` if the public Chinese summary changed
-4. update `docs/support-matrix.md` if implementation or validation scope changed
-5. update GPT-5.6 scenario notes if the run is part of a tool-surface comparison
-
-## 7. Suggested Validation Snapshots
-
-For a new backend feature:
-
-- one focused unit-test run
-- one real-board validation run
-- one clear summary paragraph in `PROGRESS.md`
-
-For a demo firmware extension:
-
-- build result
-- flash result
-- one runtime log or task-context proof point
-
-For a new diagnosis flow:
-
-- one routed example
-- one returned evidence set
-- one recommended-next-tools sequence
+A board is validated only for exercised capabilities. Report identity, commands, criteria, evidence, execution/device-state changes, persistent changes, and remaining limits.

@@ -9,6 +9,7 @@ from pathlib import Path
 
 REFERENCE_MAP = {
     "docs/quickstart.md": "quickstart.md",
+    "docs/windows-mcp-config-example.md": "windows-mcp-config-example.md",
     "docs/tool-reference.md": "tool-reference.md",
     "docs/support-matrix.md": "support-matrix.md",
     "docs/ai-playbook.md": "ai-playbook.md",

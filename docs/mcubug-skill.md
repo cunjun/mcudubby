@@ -1,158 +1,55 @@
-# mcubug Skill For Codex And CC
+# mcubug Skill
 
-This repository includes an assistant skill at `skills/mcubug`. The skill teaches Codex and
-Claude Code (CC) how to use `McuBuddy` as an evidence-first embedded board debugging workflow
-instead of treating the MCP tools as an unstructured command catalog.
+`skills/mcubug/` packages McuBuddy's evidence-first operating guidance for Codex-compatible clients.
 
-Local source path from this checkout:
+## Contents
 
 ```text
-E:\work_code\McuBuddy\skills\mcubug
+skills/mcubug/
+├── SKILL.md
+├── agents/openai.yaml
+├── references/
+└── scripts/
+    ├── sync_references.py
+    └── validate_skill.py
 ```
 
-Local file link:
+`SKILL.md` contains routing, safety, and reporting rules. References are generated snapshots of canonical documents under `docs/`.
 
-```text
-file:///E:/work_code/McuBuddy/skills/mcubug/SKILL.md
+## Canonical references
+
+The sync script maintains nine references:
+
+- `quickstart.md`
+- `windows-mcp-config-example.md`
+- `tool-reference.md`
+- `support-matrix.md`
+- `ai-playbook.md`
+- `ai-examples.md`
+- `generic-board-workflow.md`
+- `board-validation-guide.md`
+- `peripheral-actuator-debug-playbook.md`
+
+Do not edit generated copies directly.
+
+## Synchronize and validate
+
+```bash
+python skills/mcubug/scripts/sync_references.py
+python skills/mcubug/scripts/sync_references.py --check
+python skills/mcubug/scripts/validate_skill.py
+python scripts/validate_docs.py
 ```
 
-## What The Skill Contains
+## Install elsewhere
 
-- `SKILL.md` - concise routing, safety rules, backend guidance, and reporting template
-- `references/` - synchronized copies of the project docs needed during debug sessions
-- `scripts/sync_references.py` - refreshes skill references from `docs/`
-- `scripts/validate_skill.py` - checks required references and local Markdown links
-- `scripts/install_skill.py` - installs the skill into a Codex or CC skills directory
+Copy the complete `skills/mcubug` directory into the receiving Codex skills directory, then restart the client. Keep the directory structure intact.
 
-## Install For Codex From This Checkout
+## Maintenance rule
 
-From the repository root:
+1. Edit the canonical document in `docs/`.
+2. Run the sync script.
+3. Run both validators and relevant tests.
+4. Review the generated diff with the source change.
 
-```powershell
-McuBuddy skill install --target codex --dry-run
-McuBuddy skill install --target codex --force
-```
-
-If you are working from source before installing the package entry point, the compatibility script
-still works:
-
-```powershell
-.\.venv\Scripts\python.exe .\skills\mcubug\scripts\install_skill.py --target codex --force
-```
-
-The default Codex destination is:
-
-```text
-%USERPROFILE%\.codex\skills\mcubug
-```
-
-If `CODEX_HOME` is set, the Codex destination becomes:
-
-```text
-%CODEX_HOME%\skills\mcubug
-```
-
-On this machine that usually resolves to:
-
-```text
-C:\Users\zhouluo\.codex\skills\mcubug
-```
-
-Local file link after install:
-
-```text
-file:///C:/Users/zhouluo/.codex/skills/mcubug/SKILL.md
-```
-
-Restart Codex or open a new Codex thread after installing so the skill list refreshes.
-
-## Install For Claude Code / CC From This Checkout
-
-From the repository root:
-
-```powershell
-McuBuddy skill install --target claude --dry-run
-McuBuddy skill install --target claude --force
-```
-
-If you have a normal `python` command available:
-
-```powershell
-python .\skills\mcubug\scripts\install_skill.py --target claude --force
-```
-
-The default CC destination is:
-
-```text
-%USERPROFILE%\.claude\skills\mcubug
-```
-
-If `CLAUDE_HOME` is set, the CC destination becomes:
-
-```text
-%CLAUDE_HOME%\skills\mcubug
-```
-
-On this machine that usually resolves to:
-
-```text
-C:\Users\zhouluo\.claude\skills\mcubug
-```
-
-Local file link after install:
-
-```text
-file:///C:/Users/zhouluo/.claude/skills/mcubug/SKILL.md
-```
-
-Restart Claude Code / CC or open a new session after installing so the skill list refreshes.
-
-## Custom Destination
-
-Use `--home` to install under a different home directory. The skill is copied into the assistant
-specific `skills\mcubug` directory:
-
-```powershell
-McuBuddy skill install --target codex --home C:\path\to\home --force
-```
-
-## Refresh References After Editing Docs
-
-When the project docs change, refresh the skill references:
-
-```powershell
-.\.venv\Scripts\python.exe .\skills\mcubug\scripts\sync_references.py
-```
-
-Then reinstall the skill if you want the local Codex copy updated:
-
-```powershell
-McuBuddy skill install --target codex --force
-```
-
-Or reinstall the CC copy:
-
-```powershell
-McuBuddy skill install --target claude --force
-```
-
-## Validate
-
-Run the repository-local skill check:
-
-```powershell
-.\.venv\Scripts\python.exe .\skills\mcubug\scripts\validate_skill.py .\skills\mcubug
-```
-
-If the system skill-creator tools are available, also run:
-
-```powershell
-.\.venv\Scripts\python.exe C:\Users\zhouluo\.codex\skills\.system\skill-creator\scripts\quick_validate.py .\skills\mcubug
-```
-
-## Maintenance Rule
-
-Keep project documentation canonical in `docs/`. The skill references are copied from those docs
-so Codex can load only the pieces it needs during a debug session. Do not add broad duplicate
-README-style material to `skills/mcubug/references/`; add or update the relevant project doc, then
-run `sync_references.py`.
+The skill explains when to use a capability; the tool reference owns exhaustive signatures and the support matrix owns verified compatibility claims.

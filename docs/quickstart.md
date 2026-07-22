@@ -1,198 +1,139 @@
 # Quickstart
 
-This guide shows the shortest path from an installed `McuBuddy` server to the first real-board
-debug session.
+This guide gets one McuBuddy MCP session from installation to its first structured hardware evidence.
 
-## 1. Install
+## 1. Requirements
 
-```bash
-pip install McuBuddy
-```
+- Python 3.11+
+- A supported probe and driver
+- A target name accepted by the selected backend
+- Optional ELF and SVD files for symbols and peripheral decoding
 
-From a local checkout:
-
-```bash
-pip install -e .
-```
-
-Install optional development dependencies when running tests:
+## 2. Install
 
 ```bash
-pip install -e ".[dev]"
+git clone <repository-url>
+cd McuBuddy
+python -m venv .venv
 ```
 
-## 2. Configure MCP
+Windows:
 
-Before editing your MCP client config, run the local management checks:
+```powershell
+.venv\Scripts\Activate.ps1
+python -m pip install -e .
+```
+
+Linux/macOS:
 
 ```bash
-McuBuddy doctor
-McuBuddy config generate > mcubuddy.toml
-McuBuddy config validate mcubuddy.toml
-McuBuddy probes list
+source .venv/bin/activate
+python -m pip install -e .
 ```
 
-Use `--json` with `doctor` or `probes list` when sharing machine-readable setup details in an
-issue or support thread.
+## 3. Configure the MCP client
 
-McuBuddy v0.6 starts in the `core` tool profile by default. This keeps the MCP schema small and
-focuses the model on bring-up, evidence collection, peripheral/RTOS/log inspection, and
-build/flash/verify loops.
-
-For Claude Desktop / Claude Code:
+Windows example:
 
 ```json
 {
   "mcpServers": {
-    "McuBuddy": {
-      "command": "python",
-      "args": ["-m", "McuBuddy"]
+    "mcubuddy": {
+      "command": "C:\\path\\to\\McuBuddy\\.venv\\Scripts\\McuBuddy.exe",
+      "args": [],
+      "cwd": "C:\\path\\to\\McuBuddy"
     }
   }
 }
 ```
 
-Use the virtual-environment Python path if your MCP client does not inherit the shell
-environment.
+For environment variables and alternate launchers, see [Windows MCP configuration](windows-mcp-config-example.md). Restart the MCP client after changing its configuration.
 
-To expose the full expert catalog from v0.5.x, opt in explicitly and restart the MCP server:
+## 4. Choose a profile
 
-```json
-{
-  "mcpServers": {
-    "McuBuddy": {
-      "command": "python",
-      "args": ["-m", "McuBuddy"],
-      "env": {
-        "MCUBUDDY_TOOL_PROFILE": "full"
-      }
-    }
-  }
-}
-```
+<!-- mcubuddy-profile: core -->
+The default `core` profile is sufficient for discovery, connection, read-only inspection, evidence packages, and common build/flash entry points. Begin here.
+<!-- /mcubuddy-profile -->
 
-`full` is useful for low-level memory/register writes, advanced breakpoints, GDB server lifecycle,
-legacy high-level diagnosis, and experimental trace tools. Before changing profiles, disconnect
-active probes or log channels and restart the MCP server; the active profile cannot be expanded from
-inside an existing MCP session.
+<!-- mcubuddy-profile: full -->
+Set `MCUBUDDY_TOOL_PROFILE=full` before server startup only when you need specialized diagnosis, smoke tests, fine-grained stepping, run-to-location, or other advanced controls.
+<!-- /mcubuddy-profile -->
 
-## 3. Discover hardware
+## 5. Discover and connect
 
-From a terminal, you can check probe discovery before starting an MCP client:
+Ask McuBuddy to resolve the backend target name if necessary:
 
-```bash
-McuBuddy probes list
-```
-
-Inside the MCP session, use:
-
-```python
+```text
 list_connected_probes()
-list_supported_targets("pyocd")
+match_chip_name(target="PY32F030")
+get_target_info(target="py32f030x8")
 ```
 
-For `PY32F030X8` with CMSIS-DAP, use the built-in profile and set the probe ID:
+Configure the backend and connect:
 
-```python
-load_demo_profile("py32f030x8_cmsis_dap")
-configure_probe(unique_id="LU_2022_8888")
+```text
+configure_probe(backend="pyocd")
+probe_connect(target="py32f030x8")
 ```
 
-For other pyOCD targets that come from a CMSIS-Pack, configure the pack path:
+Use `unique_id` when multiple probes are attached. If connection is unstable, lower the SWD speed, check target power/wiring/reset, and close other debugger processes.
 
-```python
-configure_probe(
-    target="PY32F030X8",
-    backend="pyocd",
-    unique_id="LU_2022_8888",
-    pack_path=r"E:\work_code\McuBuddy\packs\Puya.PY32F0xx_DFP.1.2.8.pack",
-    connect_attempts=[
-        {"frequency": 100000, "connect_mode": "attach"},
-        {"frequency": 100000, "connect_mode": "under-reset"},
-    ],
-)
-```
+## 6. Collect first evidence
 
-When the Puya pack is stored under a local `packs/` directory, McuBuddy can auto-discover it
-for `PY32F030X8`.
+Establish a known stopped state before interpreting registers or memory:
 
-For built-in pyOCD targets, `pack_path` is optional:
-
-```python
-configure_probe(target="stm32l496vetx", backend="pyocd")
-```
-
-For J-Link:
-
-```python
-configure_probe(target="STM32F103C8", backend="jlink", unique_id="240710115")
-```
-
-## 4. Configure symbols
-
-For a known ELF/AXF:
-
-```python
-configure_elf(r"E:\work_code\app\Objects\Project.axf")
-```
-
-For a Keil MDK project:
-
-```python
-discover_keil_projects(r"E:\work_code\app")
-configure_keil_project(
-    root=r"E:\work_code\app",
-    uv4_path=r"E:\Keil_v5\UV4\UV4.exe",
-)
-```
-
-## 5. Run a smoke test
-
-```python
-board_smoke_test()
-```
-
-Expected evidence is a connected probe, readable CPU state, and readable vector-table words.
-The default flow connects to and halts the target and may leave it halted. Use
-`board_smoke_test(disconnect_after=True)` when the probe should disconnect afterward.
-If the probe is found but SWD returns `No ACK`, reduce the frequency, try `under-reset`, and
-check target power, wiring, reset, and whether another debugger owns the probe.
-
-## 6. Debug
-
-```python
-probe_halt()
+```text
+probe_reset(halt=True)
 read_stopped_context()
-diagnose("board does not boot")
-run_to_function("main")
+collect_startup_evidence()
 ```
 
-Optional UART log setup:
+For a crash:
 
-```python
-configure_log(uart_port="COM5", uart_baudrate=115200)
-connect_with_config()
-log_tail()
+```text
+collect_crash_evidence()
+backtrace()
 ```
 
-## 7. Safety Configuration
+Treat returned facts as evidence. Keep hypotheses separate until registers, stack, symbols, logs, or peripheral state support them.
 
-The generated `mcubuddy.toml` includes conservative defaults for destructive operations:
+## 7. Add symbols and SVD data
 
-```toml
-[memory]
-max_read_size = 4096
-max_write_size = 1024
-allow_write = false
+Configure an ELF used by project workflows:
 
-[flash]
-allow_erase = false
-allow_program = true
-max_binary_size = 16777216
-
-[security]
-allowed_file_paths = []
+```text
+configure_elf(elf_path="build/firmware.elf")
 ```
 
-Keep these defaults for first contact. Enable memory writes or flash erase only for a known board,
-known firmware, and a workflow where the risk is intentional.
+Load it into the current debug session:
+
+```text
+elf_load(path="build/firmware.elf")
+```
+
+Load a peripheral description when clock or peripheral state matters:
+
+```text
+svd_load(svd_path="device.svd")
+svd_read_peripheral(peripheral="RCC")
+```
+
+## 8. Keep session operations ordered
+
+One McuBuddy server session is one hardware-debug channel. Await reset, halt, resume, memory access, backend configuration, build, flash, and disconnect calls. Use separate sessions for independent boards.
+
+## 9. Next routes
+
+- Unknown/custom board: [Generic board workflow](generic-board-workflow.md)
+- AI-driven diagnosis: [AI debugging playbook](ai-playbook.md)
+- Exact commands: [Tool reference](tool-reference.md)
+- Backend limits: [Support matrix](support-matrix.md)
+- Real-board qualification: [Board validation guide](board-validation-guide.md)
+
+## Troubleshooting
+
+- No tools visible: restart the MCP client and inspect server stderr.
+- Probe missing: verify drivers, USB permissions, cables, and competing debugger processes.
+- Target rejected: use `match_chip_name(...)` and the backend-canonical name.
+- Symbols absent: confirm the ELF contains debug information and belongs to the flashed image.
+- Peripheral names absent: load the correct SVD for the device family.

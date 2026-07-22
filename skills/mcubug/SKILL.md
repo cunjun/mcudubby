@@ -11,7 +11,7 @@ Use `McuBuddy` as a structured evidence collector for real embedded boards. Pref
 evidence over speculation, non-destructive reads before writes, and symptom-oriented diagnosis
 before manual low-level probing.
 
-McuBuddy v0.6 defaults to the `core` profile. Start with evidence collectors and only recommend
+McuBuddy v0.5.2 defaults to the `core` profile. Start with evidence collectors and only recommend
 `MCUBUDDY_TOOL_PROFILE=full` when the required capability is hidden from the current MCP session.
 
 ## Reference Selection
@@ -20,7 +20,8 @@ Load only the reference needed for the current task:
 
 | Situation | Read |
 | --- | --- |
-| First setup or MCP client configuration | `references/quickstart.md` |
+| First setup | `references/quickstart.md` |
+| Windows MCP client configuration | `references/windows-mcp-config-example.md` |
 | Unknown target, CMSIS-Pack, Keil project discovery, smoke test | `references/generic-board-workflow.md` |
 | Need exact tool names or grouped command index | `references/tool-reference.md` |
 | Need backend capability, target metadata, or known limits | `references/support-matrix.md` |
@@ -38,7 +39,7 @@ When the user reports a board problem and has not specified commands:
 
 1. Resolve ambiguous target names with `match_chip_name(...)` or `get_target_info(...)`.
 2. Configure the probe with `configure_probe(...)`.
-3. Connect or run a read-only check with `probe_connect(...)` or `board_smoke_test(...)`.
+3. Connect with `probe_connect(...)`.
 4. Establish a known stop point with `probe_halt()` or `probe_reset(halt=True)`.
 5. Collect broad state with `read_stopped_context()` or the relevant evidence package.
 6. Use `collect_crash_evidence(...)`, `collect_startup_evidence(...)`,
@@ -68,12 +69,12 @@ server sessions may execute in parallel, and stateless metadata queries may over
 | Board will not boot | `collect_startup_evidence(...)`, then crash evidence if fault state is present |
 | HardFault or crash | `collect_crash_evidence(...)`, then `backtrace()` |
 | UART/SPI/I2C/GPIO silent | `svd_load(...)`, `collect_peripheral_evidence(...)`, `svd_read_peripheral(...)` |
-| Interrupt issue | `diagnose_interrupt_issue(...)`, NVIC state, handler symbols |
-| Memory corruption | `diagnose_memory_corruption(...)`, stack checks, snapshots, watchpoints |
-| Stack overflow | `diagnose_stack_overflow(...)`, `read_stack_usage()` |
+| Interrupt issue | Crash/peripheral evidence, NVIC state, handler symbols; `full` adds specialized diagnosis |
+| Memory corruption | Crash evidence, stack checks, snapshots; `full` adds specialized diagnosis/watchpoints |
+| Stack overflow | Crash/RTOS evidence and stack usage; `full` adds specialized diagnosis |
 | FreeRTOS stall | `collect_rtos_evidence(...)`, then task context when a task is named |
-| Clock issue | `diagnose_clock_issue(...)`, RCC/clock SVD reads |
-| Need path proof | `run_to_function(...)`, `run_to_source(...)`, `source_step()`, `step_over()`, `step_out()` |
+| Clock issue | RCC/clock SVD evidence; `full` adds specialized diagnosis |
+| Need path proof | Enable `full`, then use run-to-location or source stepping |
 | Actuator command ACKed but no motion/output | Use the actuator playbook evidence ladder |
 
 ## Backend Guidance
@@ -87,8 +88,9 @@ server sessions may execute in parallel, and stateless metadata queries may over
 
 ## Safety Rules
 
-Treat these as state-changing: reset, resume/continue, register writes, memory writes, watchpoints
-that affect execution, flash erase/program, and build/flash loops.
+Distinguish execution-changing actions (reset, halt, resume, stepping, breakpoints/watchpoints),
+state-changing actions (register or memory writes), and persistent actions (flash erase/program and
+build/flash loops).
 
 Before persistent or destructive actions, confirm target, address range, firmware image, and user
 intent unless the user already explicitly requested that action.
@@ -99,7 +101,7 @@ For flash loops:
 2. build or patch firmware
 3. `build_project(...)`
 4. `flash_firmware(...)` or `erase_flash(...)` / `program_flash(...)`
-5. `verify_flash(...)`
+5. `compare_elf_to_flash(...)`
 6. reset/halt and collect fresh evidence
 
 For motors, relays, power switches, and other actuators: prefer breakpoints and read-only

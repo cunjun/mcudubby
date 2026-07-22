@@ -37,6 +37,9 @@ jobs:
       - name: Check skill references
         run: python skills/mcubug/scripts/sync_references.py --check
 
+      - name: Check documentation contracts
+        run: python scripts/validate_docs.py
+
       - name: Test
         run: pytest
 

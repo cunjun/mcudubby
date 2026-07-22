@@ -6,7 +6,7 @@ and capability status in [Support Matrix](support-matrix.md).
 
 ## Tool Profiles
 
-McuBuddy v0.6 exposes the `core` profile by default. Set `MCUBUDDY_TOOL_PROFILE=full` at server
+McuBuddy v0.5.2 exposes the `core` profile by default. Set `MCUBUDDY_TOOL_PROFILE=full` at server
 startup to expose the complete expert catalog. The active profile is fixed for the lifetime of the
 MCP server process.
 

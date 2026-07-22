@@ -1,137 +1,111 @@
 # AI Examples
 
-This document shows concrete `McuBuddy` workflows for common embedded-debug tasks.
+These examples show compact evidence-first requests. Exact tool signatures live in the [tool reference](tool-reference.md).
 
-The goal is not to list every tool. The goal is to show practical tool sequences, the important returned fields, and how an AI assistant should interpret the evidence.
+## Connect and baseline
 
-## 1. Board Will Not Boot
+```text
+list_connected_probes()
+match_chip_name(target="STM32F103C8")
+configure_probe(backend="pyocd")
+probe_connect(target="target-name")
+probe_reset(halt=True)
+read_stopped_context()
+```
 
-User problem:
+Expected report: probe ID, backend target, stop reason, core registers, errors, and the next missing evidence.
 
-> This board does not boot after reset.
+## Boot failure
 
-Recommended sequence:
+```text
+collect_startup_evidence()
+```
 
-1. `get_target_info(...)`
-2. `configure_probe(...)`
-3. `probe_connect(...)`
-4. `probe_reset(halt=True)`
-5. `read_stopped_context()`
-6. `diagnose("board won't boot")`
-7. If needed, `backtrace()` / `dwarf_backtrace()` / `disassemble(...)`
+If fault state is present:
 
-Most important fields:
+```text
+collect_crash_evidence()
+backtrace()
+```
 
-- `pc`
-- `symbol`
-- `source`
-- `stop_reason`
-- `evidence`
+Ask the AI to distinguish reset-loop evidence, invalid vectors, fault registers, and missing-symbol uncertainty.
 
-Interpretation notes:
+## Crash with symbols
 
-- If `pc` resolves to a fault handler, prefer `diagnose_hardfault()`.
-- If the core stops in startup code, inspect clocks, vector table, and early init paths next.
+```text
+configure_elf(elf_path="build/firmware.elf")
+elf_load(path="build/firmware.elf")
+collect_crash_evidence()
+backtrace()
+```
 
-## 2. HardFault After Reset
+Confirm that the ELF matches the flashed image before accepting function names or source lines.
 
-User problem:
+## Silent peripheral
 
-> The firmware crashes into HardFault right after startup.
+```text
+svd_load(svd_path="device.svd")
+collect_peripheral_evidence(peripheral="USART1")
+svd_read_peripheral(peripheral="RCC")
+svd_read_peripheral(peripheral="GPIOA")
+svd_read_peripheral(peripheral="USART1")
+```
 
-Recommended sequence:
+Separate clock enable, pin mux, peripheral configuration, interrupt state, bus activity, and physical output. A firmware ACK proves only that a command path responded.
 
-1. `probe_connect(...)`
-2. `probe_halt()`
-3. `diagnose_hardfault()`
-4. `dwarf_backtrace()`
-5. `get_locals()`
-6. `dump_memory(...)` or `read_symbol_value(...)` if memory corruption is suspected
+## RTOS stall
 
-Most important fields:
+```text
+collect_rtos_evidence()
+list_rtos_tasks()
+rtos_task_context(task_name="worker")
+```
 
-- `fault.registers`
-- `symbol_context`
-- `evidence`
+Report scheduler state, blocked/runnable tasks, suspicious stacks, and whether task metadata was decoded reliably.
 
-Interpretation notes:
+## RTT/UART logs
 
-- Treat `evidence` as observations, not root-cause claims.
-- Use `pc_symbol`, `source`, and fault bits together before concluding anything about the bug.
+```text
+read_rtt_log()
+log_tail(lines=100)
+```
 
-## 3. UART Has No Output
+Include capture backend, channel/port settings, timestamps when available, truncation, decode errors, and whether an empty result means silence or missing configuration.
 
-User problem:
+## Full-profile path proof
 
-> USART2 has no output on TX.
+Enable `MCUBUDDY_TOOL_PROFILE=full` before server startup, then use a deliberately chosen execution-control call:
 
-Recommended sequence:
+```text
+run_to_function(function="main")
+run_to_source(file="app.c", line=120)
+source_step()
+```
 
-1. `svd_load(...)`
-2. `diagnose("UART2 has no output", peripheral="USART2")`
-3. `svd_read_peripheral("USART2")`
-4. `svd_read_peripheral("RCC")`
-5. If needed, inspect GPIO AFR/MODER registers
+State how execution was changed and re-collect stopped context afterward.
 
-Most important fields:
+## Result envelope
 
-- RCC clock enable bits
-- USART enable bits
-- GPIO mode / AF fields
+McuBuddy results should be interpreted structurally rather than from a single text field. A typical response contains status, data/evidence, errors or warnings, and metadata.
 
-Interpretation notes:
+```json
+{
+  "ok": true,
+  "data": {"example": "evidence"},
+  "warnings": [],
+  "errors": [],
+  "meta": {"tool": "example_tool"}
+}
+```
 
-- Missing UART output is often a clock-enable or alternate-function issue, not a logic bug in application code.
+Rules for AI clients:
 
-## 4. FreeRTOS Task Appears Stuck
+- `ok: false` means the requested operation did not complete; do not invent missing evidence.
+- Warnings qualify the result and belong in the report.
+- Empty data is not automatically proof of absence.
+- Preserve raw register values alongside decoded interpretation.
+- Keep facts, hypotheses, and proposed actions in separate sections.
 
-User problem:
+## Safe flash comparison
 
-> A FreeRTOS task seems stuck and the system stops making progress.
-
-Recommended sequence:
-
-1. `read_rtt_log()`
-2. `list_rtos_tasks()`
-3. `rtos_task_context(...)`
-4. `read_stack_usage()`
-5. If needed, `diagnose("task is stuck")`
-
-Most important fields:
-
-- task name
-- state
-- `pc_symbol`
-- `source`
-- stack free bytes / canary usage
-
-Interpretation notes:
-
-- A blocked task is not necessarily broken; use its wait function and source location to tell the difference between healthy waiting and pathological stalling.
-
-## 5. J-Link RTT Validation
-
-User problem:
-
-> Check whether RTT is working on a J-Link-connected board.
-
-Recommended sequence:
-
-1. `get_target_info(target, backend="jlink")`
-2. `configure_probe(backend="jlink", ...)`
-3. `probe_connect(...)`
-4. `read_rtt_log(channel=0)`
-5. If needed, run `scripts/jlink_rtt_smoke.py`
-
-Most important fields:
-
-- `status`
-- `summary`
-- `text`
-- `cb_address`
-- `buffer_size`
-
-Interpretation notes:
-
-- Detecting the control block is not the same as capturing text.
-- Empty text can still mean the firmware has not emitted a line yet, especially early in boot.
+Before persistent changes, confirm target, firmware path, and intent. After programming, compare the intended ELF/image with flash, reset/halt, and collect fresh evidence under the same conditions.

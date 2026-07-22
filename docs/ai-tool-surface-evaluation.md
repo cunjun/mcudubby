@@ -1,7 +1,7 @@
 # GPT-5.6 Tool-Surface Evaluation
 
 This document defines the repeatable evaluation used to compare the legacy `full` tool catalog with
-the v0.6 `core` profile. The machine-readable scenario source is
+the v0.5.2 `core` profile. The machine-readable scenario source is
 `tests/evaluation/gpt5p6_scenarios.yaml`.
 
 ## Fields

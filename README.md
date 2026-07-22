@@ -18,7 +18,7 @@ and GDB servers as structured tools that AI assistants can call.
 It is designed for firmware development, board bring-up, fault isolation, debugging automation,
 and AI-assisted validation.
 
-McuBuddy v0.6 starts with a focused `core` MCP tool profile by default. Set
+McuBuddy v0.5.2 starts with a focused `core` MCP tool profile by default. Set
 `MCUBUDDY_TOOL_PROFILE=full` in the MCP server environment to expose the complete expert catalog
 from earlier alpha releases.
 
@@ -118,8 +118,8 @@ pip install -e ".[dev]"
 {
   "mcpServers": {
     "McuBuddy": {
-      "command": "python",
-      "args": ["-m", "McuBuddy"]
+      "command": "McuBuddy",
+      "args": []
     }
   }
 }
@@ -147,12 +147,13 @@ doctor()
 list_connected_probes()
 match_chip_name("py32f030x8")
 configure_probe(target="py32f030x8", backend="pyocd")
-board_smoke_test(disconnect_after=True)
+probe_connect(target="py32f030x8")
+read_stopped_context()
 ```
 
-`board_smoke_test` does not write Flash, but it may halt the target by default to capture a stable
-context, so it is still execution-changing. If the device must not be halted, instruct the AI to
-perform only non-intrusive probe and environment checks.
+`probe_connect` and `read_stopped_context` are available in the default `core` profile. Reading a
+stable stopped context may halt the target, so it is still execution-changing. If the device must
+not be halted, instruct the AI to perform only non-intrusive probe and environment checks.
 
 ## 💬 Examples for AI Assistants
 
@@ -254,10 +255,10 @@ Discover the Keil project
 ### 1. Discover and Configure a Project
 
 ```text
-discover_keil_projects(root=r"E:\work_code\app")
+discover_keil_projects(root=r"C:\path\to\app")
 
 configure_keil_project(
-    project_path=r"E:\work_code\app\MDK-ARM\Project.uvprojx",
+    project_path=r"C:\path\to\app\MDK-ARM\Project.uvprojx",
     uv4_path=r"C:\Keil_v5\UV4\UV4.exe",
     target_name="Debug",
 )
@@ -270,8 +271,8 @@ projects, targets, or output files, explicitly specify `project_path`, `target_n
 
 ```text
 build_project(timeout_seconds=120)
-configure_elf(elf_path=r"E:\work_code\app\MDK-ARM\Objects\Project.axf")
-elf_load(path=r"E:\work_code\app\MDK-ARM\Objects\Project.axf")
+configure_elf(elf_path=r"C:\path\to\app\MDK-ARM\Objects\Project.axf")
+elf_load(path=r"C:\path\to\app\MDK-ARM\Objects\Project.axf")
 ```
 
 Once the AXF is loaded, the AI can reliably resolve PC, LR, and memory addresses to functions,
@@ -409,14 +410,14 @@ Restart the client or open a new session after installation. See
 
 - First-time setup: [Quickstart](docs/quickstart.md)
 - Any board and Keil project: [Generic Board Workflow](docs/generic-board-workflow.md)
-- MCP session walkthrough: [MCP Usage Example](docs/mcp-usage-example.md)
+- Windows MCP setup: [Windows MCP Configuration](docs/windows-mcp-config-example.md)
 - AI debugging decision order: [AI Playbook](docs/ai-playbook.md)
 - Common scenarios: [AI Examples](docs/ai-examples.md)
 - Complete tool index: [Tool Reference](docs/tool-reference.md)
 - Backend and hardware validation: [Support Matrix](docs/support-matrix.md)
 - Project design: [Architecture](docs/architecture.md)
 - Skill installation and maintenance: [mcubug Skill](docs/mcubug-skill.md)
-- Planned work: [v0.6 Roadmap](docs/v0.6-roadmap.md)
+- v0.5.2 release summary: [v0.5.2 Release Notes](docs/releases/v0.5.2.md)
 
 ## 🧪 Local Development
 

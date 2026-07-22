@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.6.0 - 2026-07-20
+## 0.5.2 - 2026-07-20
 
 ### Changed
 - Switched the default MCP tool profile to `core`, exposing a smaller evidence-first tool set.

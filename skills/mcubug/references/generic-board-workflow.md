@@ -1,126 +1,96 @@
 # Generic Board Workflow
 
-Use this workflow when bringing up a board that is not one of the built-in demo targets.
-The intent is to keep target-specific details in configuration, not in hard-coded Python
-branches.
+Use this route when the board is new, the MCU name is ambiguous, or no project-specific automation exists.
 
-## Concepts
+## 1. Inventory the inputs
 
-- `backend`: debug backend, currently `pyocd` or `jlink`.
-- `target`: backend target name, such as a pyOCD target ID from `list --targets`.
-- `pack_path` / `pack_paths`: local CMSIS-Pack files used by pyOCD when the target is not
-  built in.
-- `connect_attempts`: ordered fallback attempts for frequency and reset/connect mode.
-- `elf_path`: `.elf` or Keil `.axf` image used for symbols, source mapping, and backtrace.
-- `uv4_path`: Keil `UV4.exe` path, only needed for `build_project` and `flash_firmware`.
+Record:
 
-## 1. Find the probe and target
+- MCU marking and board revision
+- Probe type and serial/unique ID
+- Debug backend preference
+- SWD/JTAG wiring, target voltage, and reset availability
+- Keil project, ELF, SVD, CMSIS-Pack, and expected firmware image
 
-Start with non-destructive discovery:
+Do not infer the exact target from a marketing board name alone.
 
-```python
+## 2. Resolve the target
+
+```text
 list_connected_probes()
-list_supported_targets("pyocd")
-match_chip_name("your_mcu_name", backend="pyocd")
+match_chip_name(target="your MCU marking")
+get_target_info(target="backend-canonical-name")
 ```
 
-For pyOCD targets supplied by a CMSIS-Pack, verify the pack with pyOCD first:
+For pyOCD, target names are usually lower-case. J-Link uses its own device catalogue. If metadata is missing, install or point McuBuddy at the appropriate CMSIS-Pack before connecting.
 
-```powershell
-pyocd list --targets --pack C:\path\Vendor.Device.1.0.0.pack
+## 3. Configure the probe and connect
+
+```text
+configure_probe(backend="pyocd")
+probe_connect(target="your_mcu_name", unique_id="probe-id-if-needed")
 ```
 
-Use the exact target ID reported by pyOCD when configuring `McuBuddy`.
+Connection recovery order:
 
-## 2. Configure the probe
+1. Confirm target power, ground, SWDIO/SWCLK, and reset.
+2. Close Keil, GDB servers, and other probe owners.
+3. Lower the configured SWD speed.
+4. Try attach-under-reset when supported.
+5. Re-check the backend target name and pack support.
 
-For a CMSIS-DAP probe and a target supplied by a CMSIS-Pack:
+## 4. Establish a baseline
 
-```python
-configure_probe(
-    target="PY32F030X8",
-    backend="pyocd",
-    unique_id="LU_2022_8888",
-    pack_path=r"E:\work_code\McuBuddy\packs\Puya.PY32F0xx_DFP.1.2.8.pack",
-    connect_attempts=[
-        {"frequency": 100000, "connect_mode": "attach"},
-        {"frequency": 100000, "connect_mode": "under-reset"},
-    ],
-)
-```
-
-Use `pack_paths=[...]` when more than one pack is needed. The paths are passed directly to
-pyOCD, so they can point anywhere on the local machine.
-For `PY32F030X8`, McuBuddy can also auto-discover `Puya.PY32F0xx_DFP.*.pack` from a
-local `packs/` directory.
-
-## 3. Discover the Keil project and firmware image
-
-If the firmware is built with Keil MDK:
-
-```python
-discover_keil_projects(r"E:\work_code\your_project_root")
-configure_keil_project(
-    root=r"E:\work_code\your_project_root",
-    uv4_path=r"E:\Keil_v5\UV4\UV4.exe",
-)
-```
-
-`configure_keil_project` reads `.uvprojx` / `.uvoptx`, selects the first target if one is not
-provided, searches common output directories plus the project's configured `OutputDirectory`,
-and configures the selected `.axf` / `.elf` for symbol loading.
-
-If auto-discovery picks the wrong item, pass explicit values:
-
-```python
-configure_keil_project(
-    project_path=r"E:\work_code\app\MDK-ARM\Project.uvprojx",
-    target_name="Debug",
-    elf_path=r"E:\work_code\app\MDK-ARM\Objects\Project.axf",
-    uv4_path=r"E:\Keil_v5\UV4\UV4.exe",
-)
-```
-
-## 4. Run a smoke test
-
-Before flashing or making deeper assumptions, run:
-
-```python
-board_smoke_test(disconnect_after=True)
-```
-
-The smoke test lists probes, loads the configured ELF/AXF if available, connects, optionally
-halts the target, reads stopped context, and reads a few vector-table words. Connecting and
-halting changes the target execution state; `disconnect_after=True` closes the probe afterward.
-It is meant as a first sanity check, not a replacement for feature validation.
-
-## 5. Continue into debugging
-
-Once the smoke test can connect and read state:
-
-```python
-probe_connect(target="py32f030x8")
+```text
+probe_reset(halt=True)
 read_stopped_context()
-diagnose("board does not boot")
-run_to_function("main")
-svd_load(r"C:\path\Device.svd")
-svd_read_peripheral("RCC")
+collect_startup_evidence()
 ```
 
-For build and flash workflows:
+Record backend, probe ID, target name, core registers, stop reason, and any transport errors. This baseline separates connection failures from firmware failures.
 
-```python
-build_project()
-flash_firmware()
-compare_elf_to_flash()
+## 5. Add project information
+
+Keil project:
+
+```text
+configure_keil_project(project_path="firmware.uvprojx")
 ```
 
-## Troubleshooting
+ELF configuration and session loading:
 
-- `No ACK` from SWD usually means the probe enumerates but the target did not answer. Check
-  target power, SWDIO/SWCLK/GND wiring, reset wiring, whether Keil already owns the probe, and
-  whether firmware repurposed SWD pins.
-- Try a lower frequency and `under-reset` before assuming the target ID is wrong.
-- Keep downloaded packs and local `pyocd.yaml` files out of source control. They are machine
-  setup, not portable project state.
-- UART is optional for probe bring-up. Configure it only when a log-based diagnosis needs it.
+```text
+configure_elf(elf_path="build/firmware.elf")
+elf_load(path="build/firmware.elf")
+```
+
+Confirm the ELF matches the flashed build before trusting symbols, source lines, or globals.
+
+## 6. Add peripheral evidence
+
+```text
+svd_load(svd_path="device.svd")
+svd_read_peripheral(peripheral="RCC")
+```
+
+Use SVD evidence for clock gates, GPIO modes, interrupt enables, and peripheral status. Verify addresses against the exact MCU revision when vendor files are uncertain.
+
+## 7. Route by symptom
+
+| Symptom | First evidence |
+| --- | --- |
+| No boot | `collect_startup_evidence(...)` |
+| Fault/crash | `collect_crash_evidence(...)`, `backtrace()` |
+| Silent peripheral | `collect_peripheral_evidence(...)`, SVD reads |
+| RTOS stall | `collect_rtos_evidence(...)`, task context |
+| No logs | RTT/UART configuration, then log reads |
+
+Specialized diagnosis and fine execution control require the `full` profile. Enable it only after the core evidence shows why it is needed.
+
+## 8. Record validation
+
+Use the [board validation guide](board-validation-guide.md). Store reproducible commands, structured result envelopes, firmware identity, and observed limitations; do not report a capability as supported from configuration alone.
+
+## Safety
+
+Reads are preferred first. Reset/halt/resume alter execution, register or memory writes alter state, and flash operations persist changes. Confirm target identity and intent before escalating.

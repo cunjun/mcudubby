@@ -9,6 +9,7 @@ from pathlib import Path
 
 REQUIRED_REFERENCES = {
     "quickstart.md",
+    "windows-mcp-config-example.md",
     "tool-reference.md",
     "support-matrix.md",
     "ai-playbook.md",
