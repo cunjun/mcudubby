@@ -51,6 +51,9 @@ Core tools:
 `list_tool_safety(include_hidden=true)` to inspect metadata for the full catalog without changing
 the MCP exposure surface.
 
+Start a new session with `doctor()` and `first_contact()` before configuring a probe. The first
+checks runtime/config readiness; the second summarizes session prerequisites and missing evidence.
+
 ## Evidence Packages
 
 - `collect_crash_evidence`

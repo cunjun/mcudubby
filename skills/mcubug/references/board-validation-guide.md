@@ -11,6 +11,8 @@ Record the board/revision, MCU marking and backend target, probe model/ID, backe
 ### A. Discover
 
 ```text
+doctor()
+first_contact()
 list_connected_probes()
 match_chip_name(target="device marking")
 get_target_info(target="target-name")

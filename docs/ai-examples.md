@@ -5,6 +5,8 @@ These examples show compact evidence-first requests. Exact tool signatures live 
 ## Connect and baseline
 
 ```text
+doctor()
+first_contact()
 list_connected_probes()
 match_chip_name(target="STM32F103C8")
 configure_probe(backend="pyocd")

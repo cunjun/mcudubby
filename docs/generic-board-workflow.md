@@ -4,6 +4,13 @@ Use this route when the board is new, the MCU name is ambiguous, or no project-s
 
 ## 1. Inventory the inputs
 
+Start with the core runtime and session preflight:
+
+```text
+doctor()
+first_contact()
+```
+
 Record:
 
 - MCU marking and board revision

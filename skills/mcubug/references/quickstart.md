@@ -31,7 +31,24 @@ source .venv/bin/activate
 python -m pip install -e .
 ```
 
-## 3. Configure the MCP client
+## 3. Validate runtime and configuration
+
+Run the management preflight before starting an MCP client or touching hardware:
+
+```text
+McuBuddy doctor --json
+McuBuddy config generate > mcubuddy.toml
+McuBuddy config validate mcubuddy.toml
+McuBuddy config show --json
+McuBuddy probes list --json
+```
+
+Configuration precedence is defaults, then TOML, then `MCUBUDDY_*` environment variables, then
+CLI `--set SECTION.FIELD=VALUE` overrides. Keep memory writes and flash erase disabled until a
+specific workflow requires them. RTT scanning is bounded by `security.max_rtt_scan_size`; use
+`MCUBUDDY_MAX_RTT_SCAN_SIZE` only to set an intentional, board-appropriate limit.
+
+## 4. Configure the MCP client
 
 Windows example:
 
@@ -49,7 +66,7 @@ Windows example:
 
 For environment variables and alternate launchers, see [Windows MCP configuration](windows-mcp-config-example.md). Restart the MCP client after changing its configuration.
 
-## 4. Choose a profile
+## 5. Choose a profile
 
 <!-- mcubuddy-profile: core -->
 The default `core` profile is sufficient for discovery, connection, read-only inspection, evidence packages, and common build/flash entry points. Begin here.
@@ -59,7 +76,7 @@ The default `core` profile is sufficient for discovery, connection, read-only in
 Set `MCUBUDDY_TOOL_PROFILE=full` before server startup only when you need specialized diagnosis, smoke tests, fine-grained stepping, run-to-location, or other advanced controls.
 <!-- /mcubuddy-profile -->
 
-## 5. Discover and connect
+## 6. Discover and connect
 
 Ask McuBuddy to resolve the backend target name if necessary:
 
@@ -78,7 +95,14 @@ probe_connect(target="py32f030x8")
 
 Use `unique_id` when multiple probes are attached. If connection is unstable, lower the SWD speed, check target power/wiring/reset, and close other debugger processes.
 
-## 6. Collect first evidence
+Inside the MCP session, begin with the core preflight:
+
+```text
+doctor()
+first_contact()
+```
+
+## 7. Collect first evidence
 
 Establish a known stopped state before interpreting registers or memory:
 
@@ -97,7 +121,7 @@ backtrace()
 
 Treat returned facts as evidence. Keep hypotheses separate until registers, stack, symbols, logs, or peripheral state support them.
 
-## 7. Add symbols and SVD data
+## 8. Add symbols and SVD data
 
 Configure an ELF used by project workflows:
 
@@ -118,11 +142,11 @@ svd_load(svd_path="device.svd")
 svd_read_peripheral(peripheral="RCC")
 ```
 
-## 8. Keep session operations ordered
+## 9. Keep session operations ordered
 
 One McuBuddy server session is one hardware-debug channel. Await reset, halt, resume, memory access, backend configuration, build, flash, and disconnect calls. Use separate sessions for independent boards.
 
-## 9. Next routes
+## 10. Next routes
 
 - Unknown/custom board: [Generic board workflow](generic-board-workflow.md)
 - AI-driven diagnosis: [AI debugging playbook](ai-playbook.md)

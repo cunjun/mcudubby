@@ -63,11 +63,15 @@ From PowerShell:
 
 ```powershell
 & 'C:\path\to\McuBuddy\.venv\Scripts\python.exe' -c "import McuBuddy; print('McuBuddy import OK')"
+& 'C:\path\to\McuBuddy\.venv\Scripts\McuBuddy.exe' doctor --json
+& 'C:\path\to\McuBuddy\.venv\Scripts\McuBuddy.exe' config show --json
 ```
 
 Then restart the client and confirm that McuBuddy tools appear. A minimal hardware sequence is:
 
 ```text
+doctor()
+first_contact()
 list_connected_probes()
 configure_probe(backend="pyocd")
 probe_connect(target="target-name")

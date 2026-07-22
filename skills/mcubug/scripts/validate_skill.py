@@ -20,6 +20,8 @@ REQUIRED_REFERENCES = {
 }
 
 LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
+FRONTMATTER_RE = re.compile(r"\A---\s*\n(?P<content>.*?)\n---(?:\s*\n|\Z)", re.DOTALL)
+SKILL_NAME_RE = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*\Z")
 
 
 def iter_markdown_files(skill: Path):
@@ -46,6 +48,48 @@ def validate_links(skill: Path) -> list[str]:
     return errors
 
 
+def validate_frontmatter(text: str, *, expected_name: str) -> list[str]:
+    match = FRONTMATTER_RE.match(text)
+    if match is None:
+        return ["SKILL.md is missing YAML frontmatter"]
+
+    content = match.group("content")
+    if len(content) > 1024:
+        return ["frontmatter exceeds 1024 characters"]
+
+    fields: dict[str, str] = {}
+    errors: list[str] = []
+    for line in content.splitlines():
+        key, separator, value = line.partition(":")
+        if not separator or not key.strip() or not value.strip():
+            errors.append(f"invalid frontmatter line: {line}")
+            continue
+        fields[key.strip()] = value.strip().strip('"').strip("'")
+
+    unknown = sorted(set(fields) - {"name", "description"})
+    if unknown:
+        errors.append(f"unsupported frontmatter fields: {', '.join(unknown)}")
+
+    name = fields.get("name", "")
+    if name != expected_name:
+        errors.append(f"name must match skill directory: {expected_name}")
+    if name and SKILL_NAME_RE.fullmatch(name) is None:
+        errors.append("name must use lowercase letters, digits, and hyphens")
+
+    description = fields.get("description", "")
+    if not description.startswith("Use when "):
+        errors.append("description must start with 'Use when '")
+    if len(description) > 500:
+        errors.append("description exceeds 500 characters")
+    return errors
+
+
+def validate_body(text: str) -> list[str]:
+    if len(text.split()) > 600:
+        return ["SKILL.md exceeds 600 words"]
+    return []
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -61,6 +105,10 @@ def main() -> int:
 
     if not (skill / "SKILL.md").exists():
         errors.append("missing SKILL.md")
+    else:
+        skill_text = (skill / "SKILL.md").read_text(encoding="utf-8")
+        errors.extend(validate_frontmatter(skill_text, expected_name=skill.name))
+        errors.extend(validate_body(skill_text))
     if not (skill / "agents" / "openai.yaml").exists():
         errors.append("missing agents/openai.yaml")
 

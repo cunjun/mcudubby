@@ -17,6 +17,10 @@ The active profile is fixed when the MCP server starts. `list_tool_safety()` rep
 tools by default; `list_tool_safety(include_hidden=true)` exposes safety metadata for the complete
 catalog without changing the active MCP session.
 
+Runtime configuration applies defaults, TOML, environment variables, then CLI overrides. Memory,
+flash, file-path, and RTT scan limits are enforced before backend calls; a supported backend does
+not imply that a blocked operation is authorized by the active configuration.
+
 ## Backend status
 
 | Capability | pyOCD | J-Link | Notes |

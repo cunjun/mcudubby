@@ -16,6 +16,8 @@ Use McuBuddy as an evidence collector, not as permission to guess. Keep the boar
 
 <!-- mcubuddy-profile: core -->
 ```text
+doctor()
+first_contact()
 match_chip_name(target="device marking")
 configure_probe(backend="pyocd")
 probe_connect(target="target-name")

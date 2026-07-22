@@ -1,18 +1,15 @@
 ---
 name: mcubug
-description: Use when debugging embedded MCU boards or firmware with McuBuddy, pyOCD, J-Link, ST-Link, CMSIS-DAP, HardFault/crash symptoms, boot failures, silent UART/SPI/I2C/GPIO peripherals, CPU register or memory inspection, ELF/DWARF source debugging, SVD peripheral registers, FreeRTOS task state, RTT/UART logs, Keil UV4 build/flash loops, GDB servers, or board bring-up.
+description: Use when debugging MCU firmware or boards with McuBuddy, including probe connection, boot or HardFault crashes, silent peripherals, register/memory/ELF/SVD inspection, RTOS or RTT/UART evidence, Keil build/flash, GDB, and board bring-up through pyOCD, J-Link, ST-Link, or CMSIS-DAP.
 ---
 
 # mcubug
 
 ## Core Principle
 
-Use `McuBuddy` as a structured evidence collector for real embedded boards. Prefer direct hardware
-evidence over speculation, non-destructive reads before writes, and symptom-oriented diagnosis
-before manual low-level probing.
-
-McuBuddy v0.5.2 defaults to the `core` profile. Start with evidence collectors and only recommend
-`MCUBUDDY_TOOL_PROFILE=full` when the required capability is hidden from the current MCP session.
+Collect reproducible hardware evidence. Prefer reads over speculation, separate facts from
+hypotheses, and repeat the same checks after changes. McuBuddy v0.5.2 starts in `core`; use `full`
+only when core evidence proves it is needed.
 
 ## Reference Selection
 
@@ -20,7 +17,7 @@ Load only the reference needed for the current task:
 
 | Situation | Read |
 | --- | --- |
-| First setup | `references/quickstart.md` |
+| First setup, runtime/config preflight | `references/quickstart.md` |
 | Windows MCP client configuration | `references/windows-mcp-config-example.md` |
 | Unknown target, CMSIS-Pack, Keil project discovery, smoke test | `references/generic-board-workflow.md` |
 | Need exact tool names or grouped command index | `references/tool-reference.md` |
@@ -30,37 +27,26 @@ Load only the reference needed for the current task:
 | Firmware command reaches an actuator but hardware does not move | `references/peripheral-actuator-debug-playbook.md` |
 | Recording or updating real-board validation evidence | `references/board-validation-guide.md` |
 
-If direct `McuBuddy` MCP tools are not available, explain that missing integration and provide the
-exact tool sequence or setup change the user should run.
+If tools are unavailable, state that integration is missing and give the required setup or sequence.
 
 ## Default Flow
 
-When the user reports a board problem and has not specified commands:
+For a board problem without requested commands:
 
-1. Resolve ambiguous target names with `match_chip_name(...)` or `get_target_info(...)`.
-2. Configure the probe with `configure_probe(...)`.
-3. Connect with `probe_connect(...)`.
-4. Establish a known stop point with `probe_halt()` or `probe_reset(halt=True)`.
-5. Collect broad state with `read_stopped_context()` or the relevant evidence package.
-6. Use `collect_crash_evidence(...)`, `collect_startup_evidence(...)`,
-   `collect_peripheral_evidence(...)`, or `collect_rtos_evidence(...)` for symptom-specific facts.
-7. Load `configure_elf(...)` / `elf_load(...)` when symbol or source evidence is available.
-8. Load `svd_load(...)` when peripheral or clock state matters.
-9. Inspect `read_rtt_log()`, `log_tail(...)`, `list_rtos_tasks()`, and `rtos_task_context(...)`
-   when logs or RTOS state matter.
+1. Run `doctor()` and `first_contact()`; report missing runtime, profile, probe, target, ELF, or SVD prerequisites.
+2. Resolve ambiguous targets with `match_chip_name(...)` or `get_target_info(...)`.
+3. Use `configure_probe(...)`, then `probe_connect(...)`.
+4. Establish a known state with `probe_halt()` or `probe_reset(halt=True)`.
+5. Call `read_stopped_context()` and the matching `collect_*_evidence` tool.
+6. Add `configure_elf(...)` / `elf_load(...)`, `svd_load(...)`, logs, or RTOS context only when useful.
+7. Form a hypothesis, predict distinguishing evidence, perform the smallest safe check, then verify.
 
-## Concurrency and Session Ordering
+## Profile Boundary
 
-Treat one `McuBuddy` server session as one ordered hardware-debug channel. The server serializes
-tools that share probe, backend, ELF/SVD, log, build, or runtime configuration state. Independent
-server sessions may execute in parallel, and stateless metadata queries may overlap session work.
-
-- Await each stateful hardware command before interpreting or reporting its result.
-- Do not use parallel calls to reorder reset, halt, resume, memory access, backend configuration,
-  build, flash, or disconnect steps; the server will serialize them in arrival order.
-- Cancelling a request does not interrupt a synchronous probe SDK call already in progress. Wait
-  for it to finish before assuming the probe or backend is available for another operation.
-- Use separate server sessions for independent boards that must be operated in parallel.
+- Keep the default path inside `core`.
+- A full-only call requires `MCUBUDDY_TOOL_PROFILE=full` before startup and a restart; a running
+  core session cannot expose it.
+- Use `list_tool_safety(include_hidden=true)` to inspect hidden metadata without changing profiles.
 
 ## Symptom Routing
 
@@ -69,48 +55,30 @@ server sessions may execute in parallel, and stateless metadata queries may over
 | Board will not boot | `collect_startup_evidence(...)`, then crash evidence if fault state is present |
 | HardFault or crash | `collect_crash_evidence(...)`, then `backtrace()` |
 | UART/SPI/I2C/GPIO silent | `svd_load(...)`, `collect_peripheral_evidence(...)`, `svd_read_peripheral(...)` |
-| Interrupt issue | Crash/peripheral evidence, NVIC state, handler symbols; `full` adds specialized diagnosis |
-| Memory corruption | Crash evidence, stack checks, snapshots; `full` adds specialized diagnosis/watchpoints |
-| Stack overflow | Crash/RTOS evidence and stack usage; `full` adds specialized diagnosis |
+| Interrupt issue | Crash/peripheral evidence, NVIC state, handler symbols |
+| Memory corruption | Crash evidence, repeatable snapshots, stack and symbol checks |
+| Stack overflow | Crash/RTOS evidence and stack context |
 | FreeRTOS stall | `collect_rtos_evidence(...)`, then task context when a task is named |
-| Clock issue | RCC/clock SVD evidence; `full` adds specialized diagnosis |
-| Need path proof | Enable `full`, then use run-to-location or source stepping |
+| Clock issue | RCC/clock SVD evidence |
+| Need path proof | Full-only: restart in `full`, then use `run_to_function(...)` or `source_step()` |
 | Actuator command ACKed but no motion/output | Use the actuator playbook evidence ladder |
 
-## Backend Guidance
+## Ordering and Safety
 
-- Use pyOCD for ST-Link or CMSIS-DAP unless the user gives a reason to prefer J-Link.
-- Use J-Link for J-Link probes, native RTT, DWT cycle counter, or J-Link GDB server workflows.
-- Prefer backend-canonical target names: lower-case pyOCD names such as `stm32f103c8`, and
-  J-Link device names such as `STM32F103C8`.
-- If attach is unstable, lower SWD speed, try attach-under-reset, check target power/wiring/reset,
-  and look for stale GDB/J-Link/debugger processes.
-
-## Safety Rules
-
-Distinguish execution-changing actions (reset, halt, resume, stepping, breakpoints/watchpoints),
-state-changing actions (register or memory writes), and persistent actions (flash erase/program and
-build/flash loops).
-
-Before persistent or destructive actions, confirm target, address range, firmware image, and user
-intent unless the user already explicitly requested that action.
-
-For flash loops:
-
-1. collect evidence
-2. build or patch firmware
-3. `build_project(...)`
-4. `flash_firmware(...)` or `erase_flash(...)` / `program_flash(...)`
-5. `compare_elf_to_flash(...)`
-6. reset/halt and collect fresh evidence
-
-For motors, relays, power switches, and other actuators: prefer breakpoints and read-only
-instrumentation first, use short/low-energy commands, and separate firmware path, bus transaction,
-peripheral state, and power/output/load evidence.
+- Treat one server session as one ordered hardware channel. Await stateful calls; use separate
+  sessions for independent boards. Cancellation may not stop an in-progress probe SDK call.
+- Classify calls as read-only, execution-changing, state-changing, or persistent. Confirm target,
+  scope, firmware, intent, and recovery before writes or flash operations.
+- For flash work: collect evidence, `build_project(...)`, `flash_firmware(...)`,
+  `compare_elf_to_flash(...)`, reset/halt, and collect fresh evidence.
+- RTT memory scanning is bounded by `security.max_rtt_scan_size` or
+  `MCUBUDDY_MAX_RTT_SCAN_SIZE`; do not bypass that guard.
+- For actuators, use short low-energy commands and separately prove firmware, bus, peripheral, and
+  physical output/load behavior.
 
 ## Reporting Template
 
-When reporting findings, separate facts from interpretation:
+Report results in this order:
 
 ```text
 Evidence:
@@ -119,9 +87,9 @@ Evidence:
 Interpretation:
 - ...
 
-Likely next checks:
+Missing/uncertain evidence:
 - ...
 
-Safety notes:
+Next safe check and impact:
 - ...
 ```
