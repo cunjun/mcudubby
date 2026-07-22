@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from ..session import SessionState
+from ..pack_manager import diagnose_pack as _diagnose_pack
+from ..pack_manager import install_pack as _install_pack
 from ..tool_safety import list_tool_safety as _list_tool_safety
 from ..validation_records import list_validation_records as _list_validation_records
 from ..tools.configuration import configure_build as _configure_build
@@ -64,6 +66,26 @@ def register_runtime_tools(mcp, session: SessionState) -> None:
     async def list_validation_records() -> dict:
         """List machine-readable real-hardware validation records."""
         return _list_validation_records()
+
+    @mcp.tool()
+    async def pack_diagnose(
+        target: str, search_roots: list[str] | None = None
+    ) -> dict:
+        """Find and checksum-verify the managed CMSIS-Pack for a target."""
+        return _diagnose_pack(target, search_roots=search_roots)
+
+    @mcp.tool()
+    async def pack_install(
+        target: str,
+        destination: str = "packs",
+        confirm: bool = False,
+    ) -> dict:
+        """Download and checksum-verify a managed CMSIS-Pack after confirmation."""
+        return _install_pack(
+            target,
+            destination=destination,
+            confirm=confirm,
+        )
 
     @mcp.tool()
     async def configure_probe(

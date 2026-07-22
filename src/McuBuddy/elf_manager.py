@@ -168,12 +168,15 @@ class ElfManager:
         }
 
     def get_section_data(self) -> list[dict[str, Any]]:
-        """Return loadable PROGBITS sections with their binary content."""
+        """Return allocated PROGBITS sections with content and load addresses."""
         if not self.is_loaded:
             return []
         sections = []
         with self._path.open("rb") as handle:
             elf = ELFFile(handle)
+            load_segments = [
+                segment for segment in elf.iter_segments() if segment["p_type"] == "PT_LOAD"
+            ]
             for section in elf.iter_sections():
                 if section["sh_type"] != "SHT_PROGBITS":
                     continue
@@ -181,10 +184,19 @@ class ElfManager:
                     continue
                 if section["sh_addr"] == 0 or section["sh_size"] == 0:
                     continue
+                vma = int(section["sh_addr"])
+                lma = None
+                for segment in load_segments:
+                    seg_vma = int(segment["p_vaddr"])
+                    seg_memsz = int(segment["p_memsz"])
+                    if seg_vma <= vma < seg_vma + max(seg_memsz, 1):
+                        lma = int(segment["p_paddr"]) + (vma - seg_vma)
+                        break
                 sections.append(
                     {
                         "name": section.name,
-                        "vma": section["sh_addr"],
+                        "vma": vma,
+                        "lma": lma,
                         "size": section["sh_size"],
                         "data": section.data(),
                     }

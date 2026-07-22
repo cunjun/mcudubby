@@ -95,6 +95,10 @@ def _next_steps(target: SkillTarget) -> list[str]:
     steps = []
     if target in ("codex", "both"):
         steps.append("Use `$mcubug` in Codex after restarting the session.")
+        steps.append(
+            "Installing the skill does not register the McuBuddy MCP server; "
+            "configure it with docs/windows-mcp-config-example.md, then restart Codex."
+        )
     if target in ("claude", "both"):
         steps.append("Use the installed mcubug skill from Claude's local skills directory.")
     return steps

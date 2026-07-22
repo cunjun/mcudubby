@@ -13,5 +13,19 @@ class LogBackend(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def write(self, data: bytes) -> int:
+        raise NotImplementedError
+
+    @abstractmethod
+    def read_bytes(
+        self,
+        *,
+        max_bytes: int,
+        timeout_ms: int,
+        idle_timeout_ms: int,
+    ) -> dict:
+        raise NotImplementedError
+
+    @abstractmethod
     def read_recent(self, line_count: int = 50) -> list[str]:
         raise NotImplementedError

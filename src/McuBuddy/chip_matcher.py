@@ -38,7 +38,7 @@ _BACKEND_ALIASES = {
 }
 
 
-def _normalize_chip_name(name: str) -> str:
+def normalize_chip_name(name: str) -> str:
     return "".join(ch for ch in name.strip().lower() if ch.isalnum())
 
 
@@ -59,7 +59,7 @@ def match_chip_name(name: str, backend: str = "pyocd") -> dict[str, Any]:
             "supported_backends": sorted(set(_BACKEND_ALIASES.values())),
         }
 
-    normalized = _normalize_chip_name(name)
+    normalized = normalize_chip_name(name)
     aliases = deepcopy(_ALIAS_TABLE.get(canonical_backend, {}))
     matched = aliases.get(normalized)
     if matched is not None:

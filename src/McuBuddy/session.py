@@ -21,6 +21,16 @@ class LogBackend(Protocol):
 
     def disconnect(self) -> dict[str, Any]: ...
 
+    def write(self, data: bytes) -> int: ...
+
+    def read_bytes(
+        self,
+        *,
+        max_bytes: int,
+        timeout_ms: int,
+        idle_timeout_ms: int,
+    ) -> dict[str, Any]: ...
+
     def read_recent(self, line_count: int = 50) -> list[str]: ...
 
 

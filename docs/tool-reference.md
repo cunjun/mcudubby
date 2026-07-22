@@ -16,6 +16,8 @@ Core tools:
 - `first_contact`
 - `list_tool_safety`
 - `list_validation_records`
+- `pack_diagnose`
+- `pack_install`
 - `match_chip_name`
 - `get_target_info`
 - `list_connected_probes`
@@ -40,11 +42,15 @@ Core tools:
 - `read_rtt_log`
 - `configure_log`
 - `log_connect`
+- `uart_send`
+- `uart_read_bytes`
+- `uart_exchange`
 - `log_tail`
 - `discover_keil_projects`
 - `configure_keil_project`
 - `build_project`
 - `flash_firmware`
+- `flash_image`
 - `compare_elf_to_flash`
 
 `list_tool_safety()` lists only tools visible in the active profile. Use
@@ -53,6 +59,10 @@ the MCP exposure surface.
 
 Start a new session with `doctor()` and `first_contact()` before configuring a probe. The first
 checks runtime/config readiness; the second summarizes session prerequisites and missing evidence.
+
+`pack_diagnose(target, search_roots=None)` finds and checksum-verifies a managed CMSIS-Pack.
+`pack_install(target, destination="packs", confirm=False)` downloads the exact trusted pack,
+enforces a bounded size and checksum, then atomically installs it after `confirm=True`.
 
 ## Evidence Packages
 
@@ -132,9 +142,18 @@ Runtime configuration and target preflight:
 - `read_stopped_context`
 - `erase_flash`
 - `program_flash`
+- `flash_image`
 - `verify_flash`
 - `read_cycle_counter`
 - `read_swo_log`
+
+`program_flash(address, data, verify=True, confirm=False)` is a low-level write operation. It
+does not erase Flash first; only use it when the destination range is already erased.
+
+`flash_image(path, address, erase_mode="sector", verify=True, reset_after=True, confirm=False)`
+reads a raw binary from an allowed host path, erases the affected sectors (or the whole chip with
+`erase_mode="chip"`), programs it, verifies it, and optionally resets the target. Both Flash erase
+and programming must be enabled, and this persistent operation requires `confirm=True`.
 
 ## ELF And DWARF
 
@@ -158,11 +177,28 @@ Runtime configuration and target preflight:
 
 - `log_connect`
 - `log_disconnect`
+- `uart_send`
+- `uart_read_bytes`
+- `uart_exchange`
 - `log_tail`
 - `list_rtos_tasks`
 - `rtos_task_context`
 - `read_rtt_log`
 - `read_stack_usage`
+
+`uart_send(data, data_format, confirm=False)` writes bytes to the UART channel opened by
+`log_connect`. Use `data_format="hex"` for compact or whitespace-separated hexadecimal bytes,
+or `data_format="text"` for UTF-8 text. Because a UART command can change target behavior, the
+tool requires `confirm=True`.
+
+`uart_read_bytes(timeout_ms=1000, max_bytes=4096, idle_timeout_ms=50)` reads raw UART bytes
+without line splitting or text decoding. It returns hexadecimal data, byte count, first/last-byte
+timing, and overall/idle timeout flags. This is a read-only tool.
+
+`uart_exchange(data, data_format, timeout_ms=1000, max_bytes=4096,
+idle_timeout_ms=50, confirm=False)` writes a request and collects the raw binary response until
+the byte limit, overall timeout, or post-response idle timeout is reached. It returns both TX and
+RX evidence and requires `confirm=True` because it sends data to the target.
 
 ## SVD And Peripheral Diagnosis
 

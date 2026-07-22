@@ -12,6 +12,7 @@ CONCURRENT_TOOLS = frozenset(
         "list_tool_safety",
         "list_validation_records",
         "match_chip_name",
+        "pack_diagnose",
     }
 )
 
@@ -61,6 +62,8 @@ TOOL_POLICIES: dict[str, dict[str, Any]] = {
     "list_demo_profiles": {"level": "read-only"},
     "list_tool_safety": {"level": "read-only"},
     "list_validation_records": {"level": "read-only"},
+    "pack_diagnose": {"level": "read-only"},
+    "pack_install": {"level": "persistent-destructive"},
     "collect_crash_evidence": {"level": "execution-changing"},
     "collect_startup_evidence": {"level": "execution-changing"},
     "collect_peripheral_evidence": {"level": "read-only"},
@@ -93,6 +96,9 @@ TOOL_POLICIES: dict[str, dict[str, Any]] = {
     "dump_memory": {"level": "read-only"},
     "read_rtt_log": {"level": "read-only"},
     "log_tail": {"level": "read-only"},
+    "uart_send": {"level": "state-changing"},
+    "uart_read_bytes": {"level": "read-only"},
+    "uart_exchange": {"level": "state-changing"},
     "svd_read_peripheral": {"level": "read-only"},
     "diagnose": {"level": "execution-changing"},
     "diagnose_hardfault": {"level": "execution-changing"},
@@ -135,6 +141,7 @@ TOOL_POLICIES: dict[str, dict[str, Any]] = {
     "read_swo_log": {"level": "state-changing"},
     "erase_flash": {"level": "persistent-destructive"},
     "program_flash": {"level": "persistent-destructive"},
+    "flash_image": {"level": "persistent-destructive"},
     "flash_firmware": {"level": "persistent-destructive"},
     "build_project": {"level": "host-process"},
     "start_gdb_server": {"level": "host-process"},

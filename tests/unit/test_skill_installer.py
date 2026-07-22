@@ -17,6 +17,8 @@ def test_install_skill_writes_codex_target(tmp_path) -> None:
 
     assert report["status"] == "ok"
     assert (tmp_path / "home" / ".codex" / "skills" / "mcubug" / "SKILL.md").is_file()
+    assert any("does not register" in step for step in report["next_steps"])
+    assert any("windows-mcp-config-example.md" in step for step in report["next_steps"])
 
 
 def test_install_skill_dry_run_does_not_write(tmp_path) -> None:

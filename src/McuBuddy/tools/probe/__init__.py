@@ -15,6 +15,7 @@ from .core import list_connected_probes as list_connected_probes
 from .core import reset_target as reset_target
 from .core import resume_target as resume_target
 from .flash import erase_flash as erase_flash
+from .flash import flash_image as flash_image
 from .flash import program_flash as program_flash
 from .flash import verify_flash as verify_flash
 from .memory import compare_elf_to_flash as compare_elf_to_flash

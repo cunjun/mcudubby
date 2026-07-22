@@ -43,6 +43,13 @@ McuBuddy config show --json
 McuBuddy probes list --json
 ```
 
+For PY32F030X8, diagnose or explicitly install the trusted device pack:
+
+```powershell
+McuBuddy packs diagnose PY32F030X8 --json
+McuBuddy packs install PY32F030X8 --confirm --json
+```
+
 Configuration precedence is defaults, then TOML, then `MCUBUDDY_*` environment variables, then
 CLI `--set SECTION.FIELD=VALUE` overrides. Keep memory writes and flash erase disabled until a
 specific workflow requires them. RTT scanning is bounded by `security.max_rtt_scan_size`; use

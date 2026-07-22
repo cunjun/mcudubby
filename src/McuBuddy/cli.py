@@ -12,6 +12,7 @@ from .config import (
     validate_config_file,
 )
 from .doctor import build_doctor_error_report, build_doctor_report
+from .pack_manager import diagnose_pack, install_pack
 from .session import SessionState, create_probe_backend
 from .skill_installer import install_skill
 
@@ -31,6 +32,8 @@ def main(argv: list[str] | None = None) -> int:
             return _probes(args)
         if command == "skill":
             return _skill(args)
+        if command == "packs":
+            return _packs(args)
     except (OSError, ValueError) as exc:
         parser.error(str(exc))
     parser.error(f"unknown command: {command}")
@@ -72,6 +75,25 @@ def build_parser() -> argparse.ArgumentParser:
     install.add_argument("--dry-run", action="store_true", help="Preview without writing files.")
     install.add_argument("--force", action="store_true", help="Replace existing installs.")
     install.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
+
+    packs = subparsers.add_parser("packs", help="CMSIS-Pack management commands.")
+    packs_sub = packs.add_subparsers(dest="packs_command", required=True)
+    pack_diagnose = packs_sub.add_parser(
+        "diagnose", help="Report the required CMSIS-Pack and local verification state."
+    )
+    pack_diagnose.add_argument("target", help="Target MCU name, for example PY32F030X8.")
+    pack_diagnose.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
+    pack_install = packs_sub.add_parser(
+        "install", help="Download and checksum-verify a managed CMSIS-Pack."
+    )
+    pack_install.add_argument("target", help="Target MCU name, for example PY32F030X8.")
+    pack_install.add_argument(
+        "--destination", default="packs", help="Directory used to store the verified pack."
+    )
+    pack_install.add_argument(
+        "--confirm", action="store_true", help="Confirm the network download and file write."
+    )
+    pack_install.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
 
     return parser
 
@@ -176,6 +198,22 @@ def _skill(args: argparse.Namespace) -> int:
     )
     _print_report(report, as_json=args.json)
     return 0 if report["status"] == "ok" else 1
+
+
+def _packs(args: argparse.Namespace) -> int:
+    if args.packs_command == "diagnose":
+        report = diagnose_pack(args.target)
+        _print_report(report, as_json=args.json)
+        return 1 if report["status"] == "error" else 0
+    if args.packs_command == "install":
+        report = install_pack(
+            args.target,
+            destination=args.destination,
+            confirm=args.confirm,
+        )
+        _print_report(report, as_json=args.json)
+        return 0 if report["status"] == "ok" else 1
+    raise ValueError(f"Unknown packs command: {args.packs_command}")
 
 
 def _print_report(report: dict[str, Any], *, as_json: bool) -> None:

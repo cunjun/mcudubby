@@ -21,6 +21,7 @@ def test_help_lists_management_commands(capsys) -> None:
     assert "config" in output
     assert "probes" in output
     assert "skill" in output
+    assert "packs" in output
 
 
 def test_config_generate_prints_toml(capsys) -> None:
@@ -69,6 +70,49 @@ def test_skill_install_dry_run_json(tmp_path, capsys) -> None:
     report = json.loads(capsys.readouterr().out)
     assert report["target"] == "both"
     assert {entry["status"] for entry in report["entries"]} == {"would_install"}
+
+
+def test_packs_diagnose_json_reports_managed_target(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(
+        cli,
+        "diagnose_pack",
+        lambda target: {
+            "status": "warning",
+            "summary": "pack missing",
+            "target": target.lower(),
+        },
+    )
+
+    assert cli.main(["packs", "diagnose", "PY32F030X8", "--json"]) == 0
+
+    assert json.loads(capsys.readouterr().out)["target"] == "py32f030x8"
+
+
+def test_packs_install_passes_explicit_confirmation(monkeypatch, tmp_path, capsys) -> None:
+    calls = []
+
+    def fake_install(target, *, destination, confirm):
+        calls.append((target, destination, confirm))
+        return {"status": "ok", "summary": "installed"}
+
+    monkeypatch.setattr(cli, "install_pack", fake_install)
+
+    assert (
+        cli.main(
+            [
+                "packs",
+                "install",
+                "py32f030x8",
+                "--destination",
+                str(tmp_path),
+                "--confirm",
+                "--json",
+            ]
+        )
+        == 0
+    )
+    assert calls == [("py32f030x8", str(tmp_path), True)]
+    assert json.loads(capsys.readouterr().out)["status"] == "ok"
 
 
 def test_probes_list_json_uses_configured_backend(monkeypatch, tmp_path, capsys) -> None:

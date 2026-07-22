@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import deque
+import time
 from typing import Deque
 
 from ...errors import BackendUnavailableError
@@ -37,6 +38,69 @@ class UartLogBackend(LogBackend):
             self._serial.close()
         self._serial = None
         return {"status": "ok", "summary": "Disconnected UART log channel."}
+
+    def write(self, data: bytes) -> int:
+        if self._serial is None:
+            raise BackendUnavailableError("UART log channel is not connected")
+        bytes_sent = self._serial.write(data)
+        self._serial.flush()
+        return bytes_sent
+
+    def read_bytes(
+        self,
+        *,
+        max_bytes: int,
+        timeout_ms: int,
+        idle_timeout_ms: int,
+    ) -> dict:
+        if self._serial is None:
+            raise BackendUnavailableError("UART log channel is not connected")
+        if max_bytes <= 0:
+            raise ValueError("max_bytes must be greater than 0")
+        if timeout_ms <= 0:
+            raise ValueError("timeout_ms must be greater than 0")
+        if idle_timeout_ms <= 0:
+            raise ValueError("idle_timeout_ms must be greater than 0")
+
+        started = time.monotonic()
+        deadline = started + timeout_ms / 1000
+        received = bytearray()
+        first_byte_at: float | None = None
+        last_byte_at: float | None = None
+        idle_timed_out = False
+
+        while len(received) < max_bytes:
+            now = time.monotonic()
+            waiting = int(self._serial.in_waiting)
+            if waiting:
+                chunk = self._serial.read(min(waiting, max_bytes - len(received)))
+                if chunk:
+                    now = time.monotonic()
+                    first_byte_at = first_byte_at or now
+                    last_byte_at = now
+                    received.extend(chunk)
+                    continue
+            if last_byte_at is not None and now - last_byte_at >= idle_timeout_ms / 1000:
+                idle_timed_out = True
+                break
+            if now >= deadline:
+                break
+            time.sleep(0.001)
+
+        finished = time.monotonic()
+        elapsed_ms = (finished - started) * 1000
+        return {
+            "data": bytes(received),
+            "elapsed_ms": elapsed_ms,
+            "first_byte_ms": (
+                (first_byte_at - started) * 1000 if first_byte_at is not None else None
+            ),
+            "last_byte_ms": (
+                (last_byte_at - started) * 1000 if last_byte_at is not None else None
+            ),
+            "timed_out": finished >= deadline and len(received) < max_bytes,
+            "idle_timed_out": idle_timed_out,
+        }
 
     def poll(self, max_lines: int = 100) -> int:
         if self._serial is None:

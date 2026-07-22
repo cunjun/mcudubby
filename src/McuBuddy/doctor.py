@@ -5,6 +5,11 @@ import sys
 from pathlib import Path
 from typing import Any
 
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python 3.10
+    import tomli as tomllib
+
 from . import __version__
 from .backends.probe.sidecar_client import resolve_sidecar_path
 from .config import RuntimeConfig, config_for_display
@@ -15,6 +20,7 @@ DOCTOR_SCHEMA_VERSION = "1.0"
 
 def build_doctor_report(config: RuntimeConfig) -> dict[str, Any]:
     checks = [
+        _check_version(),
         _check_python(),
         _check_import("mcp", "MCP package"),
         _check_import("pyocd", "pyOCD"),
@@ -73,6 +79,41 @@ def _check_python() -> dict[str, Any]:
     }
 
 
+def _read_source_version() -> str | None:
+    pyproject_path = Path(__file__).resolve().parents[2] / "pyproject.toml"
+    if not pyproject_path.is_file():
+        return None
+    try:
+        with pyproject_path.open("rb") as handle:
+            project = tomllib.load(handle).get("project", {})
+    except (OSError, tomllib.TOMLDecodeError):
+        return None
+    version = project.get("version")
+    return str(version) if version else None
+
+
+def _check_version() -> dict[str, Any]:
+    source_version = _read_source_version()
+    if source_version is None or source_version == __version__:
+        return {
+            "name": "version",
+            "status": "ok",
+            "summary": f"McuBuddy {__version__} is installed.",
+            "installed_version": __version__,
+            "source_version": source_version,
+        }
+    return {
+        "name": "version",
+        "status": "warning",
+        "summary": (
+            f"Installed McuBuddy {__version__} differs from source tree {source_version}."
+        ),
+        "installed_version": __version__,
+        "source_version": source_version,
+        "recommended_action": "Reinstall or synchronize the project environment.",
+    }
+
+
 def _check_import(module_name: str, label: str, optional: bool = False) -> dict[str, Any]:
     found = importlib.util.find_spec(module_name) is not None
     status = "ok" if found else ("warning" if optional else "error")
@@ -81,6 +122,13 @@ def _check_import(module_name: str, label: str, optional: bool = False) -> dict[
 
 
 def _check_sidecar(config: RuntimeConfig) -> dict[str, Any]:
+    if config.probe.backend != "probe-rs":
+        return {
+            "name": "probe-rs-sidecar",
+            "status": "ok",
+            "summary": f"Not required for configured {config.probe.backend} backend.",
+            "required": False,
+        }
     try:
         path = resolve_sidecar_path(config.probe.probe_rs_sidecar_path)
     except Exception as exc:
@@ -88,12 +136,14 @@ def _check_sidecar(config: RuntimeConfig) -> dict[str, Any]:
             "name": "probe-rs-sidecar",
             "status": "warning",
             "summary": str(exc),
+            "required": True,
         }
     return {
         "name": "probe-rs-sidecar",
         "status": "ok",
         "summary": f"probe-rs sidecar found at {path}.",
         "path": path,
+        "required": True,
     }
 
 

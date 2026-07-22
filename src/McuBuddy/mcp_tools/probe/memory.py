@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from ...session import SessionState
 from ...tools import probe as probe_tools
 
@@ -44,6 +46,31 @@ def register_probe_memory_tools(mcp, session: SessionState) -> None:
             address=address,
             data=data,
             verify=verify,
+            confirm=confirm,
+        )
+
+    @mcp.tool()
+    async def flash_image(
+        path: str,
+        address: int,
+        erase_mode: Literal["sector", "chip"] = "sector",
+        verify: bool = True,
+        reset_after: bool = True,
+        confirm: bool = False,
+    ) -> dict:
+        """Flash a raw binary file with erase, program, verify, and optional reset.
+
+        path must be within security.allowed_file_paths when that allowlist is configured.
+        erase_mode accepts 'sector' (default) or 'chip'. This persistent operation requires
+        explicit confirmation and both flash erase and programming to be enabled.
+        """
+        return probe_tools.flash_image(
+            session,
+            path=path,
+            address=address,
+            erase_mode=erase_mode,
+            verify=verify,
+            reset_after=reset_after,
             confirm=confirm,
         )
 

@@ -15,6 +15,7 @@ class ProbeCapability(str, Enum):
     WATCHPOINTS = "watchpoints"
     FPU_REGISTERS = "fpu-registers"
     FLASH = "flash"
+    FLASH_IMAGE = "flash-image"
     RTT_READ = "rtt-read"
     DWT_CYCLE_COUNTER = "dwt-cycle-counter"
     SWO = "swo"
@@ -33,6 +34,7 @@ _LEGACY_METHODS: dict[ProbeCapability, str] = {
     ProbeCapability.WATCHPOINTS: "set_watchpoint",
     ProbeCapability.FPU_REGISTERS: "read_fpu_registers",
     ProbeCapability.FLASH: "program_flash",
+    ProbeCapability.FLASH_IMAGE: "flash_image",
     ProbeCapability.RTT_READ: "read_rtt_log",
     ProbeCapability.DWT_CYCLE_COUNTER: "read_cycle_counter",
     ProbeCapability.SWO: "read_swo_log",
@@ -174,6 +176,18 @@ class ProbeBackend(ABC):
         data: bytes,
         verify: bool = True,
     ) -> dict[str, Any]:
+        """Program bytes without erasing; callers must ensure the range is erased first."""
+        raise NotImplementedError
+
+    def flash_image(
+        self,
+        address: int,
+        data: bytes,
+        erase_mode: str = "sector",
+        verify: bool = True,
+        reset_after: bool = True,
+    ) -> dict[str, Any]:
+        """Erase, program, verify, and optionally reset as one backend operation."""
         raise NotImplementedError
 
     def verify_flash(self, address: int, data: bytes) -> dict[str, Any]:

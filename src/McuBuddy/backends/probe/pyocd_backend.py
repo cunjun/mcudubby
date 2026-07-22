@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import time
-from pathlib import Path
 from typing import Any
 
 from ...errors import BackendUnavailableError
+from ...pack_manager import discover_pack_paths
 from .base import ProbeBackend, ProbeCapability
 
 try:
@@ -15,34 +15,8 @@ except ImportError:  # pragma: no cover
     Target = None
 
 
-_DEFAULT_PACK_PATTERNS = {
-    "py32f030x8": ["Puya.PY32F0xx_DFP.*.pack"],
-}
-
-
 def _discover_default_pack_paths(target: str) -> list[str]:
-    normalized_target = "".join(ch for ch in target.strip().lower() if ch.isalnum())
-    patterns = _DEFAULT_PACK_PATTERNS.get(normalized_target)
-    if not patterns:
-        return []
-
-    search_roots = [
-        Path.cwd() / "packs",
-        Path(__file__).resolve().parents[4] / "packs",
-    ]
-    discovered: list[str] = []
-    seen: set[Path] = set()
-    for root in search_roots:
-        if not root.is_dir():
-            continue
-        for pattern in patterns:
-            for pack_path in sorted(root.glob(pattern)):
-                resolved = pack_path.resolve()
-                if resolved in seen:
-                    continue
-                seen.add(resolved)
-                discovered.append(str(resolved))
-    return discovered
+    return discover_pack_paths(target)
 
 
 class PyOcdProbeBackend(ProbeBackend):
@@ -52,6 +26,7 @@ class PyOcdProbeBackend(ProbeBackend):
         ProbeCapability.WATCHPOINTS,
         ProbeCapability.FPU_REGISTERS,
         ProbeCapability.FLASH,
+        ProbeCapability.FLASH_IMAGE,
         ProbeCapability.CONNECT_HINTS,
         ProbeCapability.PACK_PATHS,
     }
@@ -456,6 +431,7 @@ class PyOcdProbeBackend(ProbeBackend):
         data: bytes,
         verify: bool = True,
     ) -> dict[str, Any]:
+        """Program bytes without erasing; use flash_image for a safe image update."""
         self._require_target()
         flash = self._get_flash()
 
@@ -465,22 +441,9 @@ class PyOcdProbeBackend(ProbeBackend):
 
             flash.init(flash.Operation.PROGRAM, address=address, reset=True)
             try:
-                offset = 0
-                while offset < len(data):
-                    page_info = flash.get_page_info(address + offset)
-                    page_size = int(getattr(page_info, "size", 0))
-                    if page_size <= 0:
-                        raise BackendUnavailableError(
-                            f"invalid flash page size at {hex(address + offset)}"
-                        )
-                    chunk = data[offset : offset + page_size]
-                    flash.program_page(address + offset, chunk)
-                    offset += len(chunk)
+                self._program_flash_pages(flash, address, data)
             finally:
-                try:
-                    flash.cleanup()
-                except Exception:
-                    pass
+                self._cleanup_flash(flash)
 
             result = {
                 "status": "ok",
@@ -499,6 +462,170 @@ class PyOcdProbeBackend(ProbeBackend):
                 "status": "error",
                 "summary": str(e),
             }
+
+    def flash_image(
+        self,
+        address: int,
+        data: bytes,
+        erase_mode: str = "sector",
+        verify: bool = True,
+        reset_after: bool = True,
+    ) -> dict[str, Any]:
+        """Perform a complete erase/program/verify/reset image transaction."""
+        self._require_target()
+        flash = self._get_flash()
+        stage = "validation"
+        erase_operation_completed = False
+        erased_sector_count = 0
+        program_operation_completed = False
+        program_progress = {"bytes": 0}
+
+        try:
+            if not data:
+                raise ValueError("data must not be empty.")
+            if erase_mode not in {"sector", "chip"}:
+                raise ValueError("erase_mode must be 'sector' or 'chip'.")
+
+            stage = "erase"
+            erase_address = None
+            if erase_mode == "sector":
+                first_sector = flash.get_sector_info(address)
+                erase_address = int(getattr(first_sector, "base_addr", address))
+            flash.init(flash.Operation.ERASE, address=erase_address, reset=True)
+            try:
+                if erase_mode == "chip":
+                    flash.erase_all()
+                else:
+                    end_address = address + len(data)
+                    cursor = address
+                    erased_sectors: set[int] = set()
+                    while cursor < end_address:
+                        sector_info = flash.get_sector_info(cursor)
+                        sector_size = int(getattr(sector_info, "size", 0))
+                        sector_address = int(getattr(sector_info, "base_addr", cursor))
+                        if sector_size <= 0:
+                            raise BackendUnavailableError(
+                                f"invalid flash sector size at {hex(cursor)}"
+                            )
+                        if sector_address not in erased_sectors:
+                            flash.erase_sector(sector_address)
+                            erased_sectors.add(sector_address)
+                            erased_sector_count += 1
+                        cursor = sector_address + sector_size
+                erase_operation_completed = True
+            finally:
+                if erase_operation_completed:
+                    stage = "erase_cleanup"
+                self._cleanup_flash(flash)
+
+            stage = "program"
+            flash.init(flash.Operation.PROGRAM, address=address, reset=True)
+            try:
+                self._program_flash_pages(flash, address, data, progress=program_progress)
+                program_operation_completed = True
+            finally:
+                if program_operation_completed:
+                    stage = "program_cleanup"
+                self._cleanup_flash(flash)
+
+            verified = False
+            if verify:
+                stage = "verify"
+                verify_result = self.verify_flash(address, data)
+                if verify_result["status"] != "ok" or not verify_result.get("match", False):
+                    return {
+                        **verify_result,
+                        "stage": stage,
+                        "erase_mode": erase_mode,
+                        "erased": True,
+                        "programmed": True,
+                        "erase_state": "complete",
+                        "erased_sector_count": erased_sector_count,
+                        "program_state": "complete",
+                        "programmed_bytes": program_progress["bytes"],
+                        "verified": False,
+                        "reset": False,
+                    }
+                verified = True
+
+            reset_performed = False
+            if reset_after:
+                stage = "reset"
+                self._target.reset()
+                reset_performed = True
+
+            return {
+                "status": "ok",
+                "summary": f"Flashed {len(data)} byte(s) at {hex(address)}.",
+                "address": hex(address),
+                "size": len(data),
+                "erase_mode": erase_mode,
+                "erased": True,
+                "programmed": True,
+                "erase_state": "complete",
+                "erased_sector_count": erased_sector_count,
+                "program_state": "complete",
+                "programmed_bytes": program_progress["bytes"],
+                "verified": verified,
+                "reset": reset_performed,
+            }
+        except Exception as e:
+            erase_state = "complete" if erase_operation_completed else "not_started"
+            if erased_sector_count and not erase_operation_completed:
+                erase_state = "partial"
+            elif erase_mode == "chip" and stage == "erase" and not erase_operation_completed:
+                erase_state = "unknown"
+            program_state = "complete" if program_operation_completed else "not_started"
+            if program_progress["bytes"] and not program_operation_completed:
+                program_state = "partial"
+            return {
+                "status": "error",
+                "summary": str(e),
+                "stage": stage,
+                "address": hex(address),
+                "size": len(data),
+                "erase_mode": erase_mode,
+                "erased": erase_operation_completed,
+                "programmed": program_operation_completed,
+                "erase_state": erase_state,
+                "erased_sector_count": erased_sector_count,
+                "program_state": program_state,
+                "programmed_bytes": program_progress["bytes"],
+                "verified": False,
+                "reset": False,
+            }
+
+    @staticmethod
+    def _program_flash_pages(
+        flash: Any,
+        address: int,
+        data: bytes,
+        progress: dict[str, int] | None = None,
+    ) -> None:
+        offset = 0
+        while offset < len(data):
+            current_address = address + offset
+            page_info = flash.get_page_info(current_address)
+            page_size = int(getattr(page_info, "size", 0))
+            page_address = int(getattr(page_info, "base_addr", current_address))
+            if page_size <= 0:
+                raise BackendUnavailableError(
+                    f"invalid flash page size at {hex(current_address)}"
+                )
+            bytes_until_page_end = page_address + page_size - current_address
+            if bytes_until_page_end <= 0:
+                raise BackendUnavailableError(
+                    f"invalid flash page boundary at {hex(current_address)}"
+                )
+            chunk = data[offset : offset + bytes_until_page_end]
+            flash.program_page(current_address, chunk)
+            offset += len(chunk)
+            if progress is not None:
+                progress["bytes"] = offset
+
+    @staticmethod
+    def _cleanup_flash(flash: Any) -> None:
+        flash.cleanup()
 
     def verify_flash(self, address: int, data: bytes) -> dict[str, Any]:
         self._require_target()

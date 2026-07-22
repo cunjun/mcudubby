@@ -173,6 +173,9 @@ def step_n_instructions(session: SessionState, count: int = 10) -> dict:
     }
 
 
+_SRAM_START = 0x20000000
+_SRAM_END = 0x3FFFFFFF
+
 _CORTEX_M_REGIONS = [
     {
         "name": "code",
@@ -183,8 +186,8 @@ _CORTEX_M_REGIONS = [
     },
     {
         "name": "sram",
-        "start": hex(0x20000000),
-        "end": hex(0x3FFFFFFF),
+        "start": hex(_SRAM_START),
+        "end": hex(_SRAM_END),
         "size": 0x20000000,
         "description": "On-chip SRAM region.",
     },
@@ -253,70 +256,113 @@ def compare_elf_to_flash(session: SessionState) -> dict:
     if not sections:
         return {"status": "error", "summary": "No loadable PROGBITS sections found in ELF."}
 
+    config = runtime_config_for(session)
+    chunk_size = config.memory.max_read_size
     results = []
     total_bytes = 0
     total_mismatches = 0
     for sec in sections:
         vma: int = sec["vma"]
+        lma_value = sec.get("lma")
+        lma = int(lma_value) if lma_value is not None else None
         expected: bytes = sec["data"]
         size = len(expected)
-        if blocked := ensure_memory_read_allowed(runtime_config_for(session), size):
+
+        if _SRAM_START <= vma <= _SRAM_END and (lma is None or lma == vma):
             results.append(
                 {
                     "section": sec["name"],
                     "address": hex(vma),
+                    "vma": hex(vma),
+                    "lma": None if lma is None else hex(lma),
                     "size": size,
-                    "status": "blocked",
-                    "error": blocked["summary"],
+                    "status": "skipped",
+                    "classification": "runtime_ram",
+                    "reason": "Runtime RAM has no distinct load address and is not Flash content.",
                 }
             )
             continue
+
+        load_address = vma if lma is None else lma
+        classification = "flash_lma" if lma is not None and lma != vma else "flash"
+        mismatch_count = 0
+        mismatches = []
         try:
-            actual = session.probe.read_memory(vma, size)
+            for offset in range(0, size, chunk_size):
+                read_size = min(chunk_size, size - offset)
+                if blocked := ensure_memory_read_allowed(config, read_size):
+                    raise ValueError(blocked["summary"])
+                actual = session.probe.read_memory(load_address + offset, read_size)
+                for index, (expected_byte, actual_byte) in enumerate(
+                    zip(expected[offset : offset + read_size], actual, strict=True)
+                ):
+                    if expected_byte == actual_byte:
+                        continue
+                    mismatch_count += 1
+                    if len(mismatches) < 20:
+                        byte_offset = offset + index
+                        mismatches.append(
+                            {
+                                "offset": byte_offset,
+                                "address": hex(load_address + byte_offset),
+                                "expected": hex(expected_byte),
+                                "actual": hex(actual_byte),
+                            }
+                        )
         except Exception as e:
             results.append(
                 {
                     "section": sec["name"],
                     "address": hex(vma),
+                    "load_address": hex(load_address),
+                    "vma": hex(vma),
+                    "lma": None if lma is None else hex(lma),
                     "size": size,
                     "status": "read_error",
+                    "classification": classification,
                     "error": str(e),
                 }
             )
             continue
-        mismatches = [
-            {
-                "offset": i,
-                "address": hex(vma + i),
-                "expected": hex(expected[i]),
-                "actual": hex(actual[i]),
-            }
-            for i in range(size)
-            if expected[i] != actual[i]
-        ]
         total_bytes += size
-        total_mismatches += len(mismatches)
+        total_mismatches += mismatch_count
         results.append(
             {
                 "section": sec["name"],
                 "address": hex(vma),
+                "load_address": hex(load_address),
+                "vma": hex(vma),
+                "lma": None if lma is None else hex(lma),
                 "size": size,
-                "status": "match" if not mismatches else "mismatch",
-                "mismatch_count": len(mismatches),
-                "mismatches": mismatches[:20],  # cap detail to first 20
+                "status": "match" if mismatch_count == 0 else "mismatch",
+                "classification": classification,
+                "mismatch_count": mismatch_count,
+                "mismatches": mismatches,
             }
         )
 
-    summary = (
-        f"All {total_bytes} bytes match."
-        if total_mismatches == 0
-        else f"{total_mismatches} byte(s) differ across {sum(1 for r in results if r.get('mismatch_count', 0) > 0)} section(s)."
+    flash_sections = [result for result in results if result["classification"] != "runtime_ram"]
+    flash_match = bool(flash_sections) and all(
+        result["status"] == "match" for result in flash_sections
     )
+    if flash_match:
+        summary = f"All {total_bytes} Flash byte(s) match."
+    elif total_mismatches:
+        mismatch_sections = sum(
+            1 for result in flash_sections if result.get("mismatch_count", 0) > 0
+        )
+        summary = f"{total_mismatches} Flash byte(s) differ across {mismatch_sections} section(s)."
+    else:
+        summary = "Flash comparison could not verify every loadable Flash section."
     return {
         "status": "ok",
         "summary": summary,
+        "flash_match": flash_match,
         "total_bytes_checked": total_bytes,
         "total_mismatches": total_mismatches,
+        "runtime_sections_skipped": sum(
+            1 for result in results if result["classification"] == "runtime_ram"
+        ),
         "sections": results,
     }
 

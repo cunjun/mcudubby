@@ -20,7 +20,7 @@ def test_full_server_registers_legacy_tools_plus_evidence() -> None:
     app = create_server(SessionState(), tool_profile="full")
     names = set(app._tool_manager._tools)
 
-    assert len(names) == 108
+    assert len(names) == 114
     assert "diagnose" in names
     assert "run_debug_loop" in names
     assert "probe_write_memory" in names
